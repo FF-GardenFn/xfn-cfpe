@@ -1,0 +1,15 @@
+{
+  "query_id": "q9",
+  "query_num": 9,
+  "category": "Technical/Explanation",
+  "mode_requested": null,
+  "expected_mode": "bypass",
+  "model": "claude-opus-4-5-20251101",
+  "input_tokens": 5648,
+  "output_tokens": 233,
+  "thinking_tokens": null,
+  "latency_ms": 6137.7,
+  "answer": "A `match` statement in Rust compares a value against patterns and executes the corresponding arm:\n\n```rust\nmatch value {\n    pattern1 => expression1,\n    pattern2 => expression2,\n    _ => default_expression,  // wildcard catches remaining cases\n}\n```\n\n**Example:**\n\n```rust\nlet number = 3;\n\nmatch number {\n    1 => println!(\"one\"),\n    2 | 3 => println!(\"two or three\"),  // multiple patterns with |\n    4..=10 => println!(\"four through ten\"),  // inclusive range\n    _ => println!(\"something else\"),\n}\n```\n\n**Key rules:**\n- Matches must be exhaustive (cover all possibilities)\n- Arms are evaluated top-to-bottom, first match wins\n- The `_` wildcard matches anything\n- Arms can bind variables: `Some(x) => println!(\"{x}\")`\n- Guards add conditions: `n if n < 0 => println!(\"negative\")`",
+  "thinking": null,
+  "timestamp": "2026-01-23T16:27:27.161302"
+}

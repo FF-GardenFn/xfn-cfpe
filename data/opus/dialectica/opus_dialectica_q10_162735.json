@@ -1,0 +1,15 @@
+{
+  "query_id": "q10",
+  "query_num": 10,
+  "category": "Factual/Historical",
+  "mode_requested": null,
+  "expected_mode": "bypass",
+  "model": "claude-opus-4-5-20251101",
+  "input_tokens": 5654,
+  "output_tokens": 234,
+  "thinking_tokens": null,
+  "latency_ms": 8201.46,
+  "answer": "The reflector's design property that created vulnerability: **no letter could ever encrypt to itself**.\n\nBecause the reflector paired letters (A\u2194B, C\u2194D, etc.) and current flowed through it before returning through the rotors, the output letter was always different from the input letter.\n\n**Why this mattered for cryptanalysis:**\n\n1. **Crib-based attacks**: When Allied cryptanalysts had a suspected plaintext (\"crib\"), they could eliminate any rotor position where a ciphertext letter aligned with the same plaintext letter. This drastically reduced the search space.\n\n2. **The Bombe's efficiency**: Turing's Bombe exploited this by testing cribs against ciphertext\u2014any position producing a letter encrypting to itself was immediately discarded.\n\n3. **Statistical signature**: In normal language, letters occasionally repeat in the same position across related messages. The guaranteed absence of self-encryption was a detectable anomaly.\n\n**Confidence**: 0.85 (factual retrieval from well-documented cryptographic history)",
+  "thinking": null,
+  "timestamp": "2026-01-23T16:27:35.363355"
+}

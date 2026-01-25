@@ -1,0 +1,15 @@
+{
+  "query_id": "q10",
+  "query_num": 10,
+  "category": "Factual/Historical",
+  "mode_requested": null,
+  "expected_mode": "bypass",
+  "model": "claude-opus-4-5-20251101",
+  "input_tokens": 35,
+  "output_tokens": 313,
+  "thinking_tokens": null,
+  "latency_ms": 10240.35,
+  "answer": "The critical vulnerability was that **the reflector made it impossible for any letter to encrypt to itself**.\n\nSince the reflector paired letters (e.g., A\u2194B, C\u2194D, etc.) and routed the electrical signal back through the rotors, if you pressed 'A', the current would go through the rotors, hit the reflector, and return via a different path\u2014guaranteeing the output could never be 'A'.\n\nThis seemingly minor property had major cryptanalytic consequences:\n\n1. **Crib validation**: When Bletchley Park analysts guessed plaintext (a \"crib\"), they could immediately rule out any alignment where a ciphertext letter matched the corresponding guessed plaintext letter.\n\n2. **Reduced search space**: This eliminated roughly 1/26 of possible alignments for any crib, which compounded significantly with longer cribs.\n\n3. **Bombe exploitation**: Alan Turing's Bombe machines exploited this property directly. The machines could test rotor positions rapidly and use contradictions (where a letter would have to encrypt to itself) to eliminate impossible settings.\n\nThe Germans included the reflector to make the machine reciprocal (pressing 'A' to get 'B' meant pressing 'B' would give 'A'), which simplified field operations. They considered the self-encryption prohibition a security *feature*, not realizing it actually provided crucial leverage for attackers.",
+  "thinking": null,
+  "timestamp": "2026-01-23T16:11:15.880502"
+}

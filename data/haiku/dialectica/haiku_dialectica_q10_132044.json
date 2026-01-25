@@ -1,0 +1,15 @@
+{
+  "query_id": "q10",
+  "query_num": 10,
+  "category": "Factual/Historical",
+  "mode_requested": null,
+  "expected_mode": "bypass",
+  "model": "claude-haiku-4-5-20251001",
+  "input_tokens": 5684,
+  "output_tokens": 584,
+  "thinking_tokens": null,
+  "latency_ms": 8981.78,
+  "answer": "**The Reciprocity Property**: The reflector made the Enigma reciprocal\u2014if plaintext key A enciphered to ciphertext G, then plaintext G would encipher to A.\n\nThis arose because the reflector **permuted current flow back through the rotors without any additional substitution**. Unlike the three rotors (each with independent wiring), the reflector was a fixed, symmetric wiring. Current went: rotor 1 \u2192 rotor 2 \u2192 rotor 3 \u2192 reflector \u2192 back through rotor 3 \u2192 back through rotor 2 \u2192 back through rotor 1.\n\nThe symmetry meant: no letter could ever encipher to itself, and the same machine setting decrypted what it encrypted.\n\n**Why this was fatal to security:**\n\n1. **Cribs became deterministic**: If cryptanalysts guessed plaintext at position X (crib), the reciprocal property meant they could instantly rule out any rotor position where the ciphertext letter at X equaled the guessed plaintext letter (impossible under reciprocity).\n\n2. **The Bombe worked**: Turing and Welchley's Bombe machine could systematically test rotor configurations by checking for violations of reciprocity. If a candidate setting produced a letter enciphering to itself, it was ruled out immediately.\n\n3. **Reduced effective key space**: Reciprocity cut the actual search space roughly in half compared to a non-reciprocal permutation. A reflector with additional dynamic permutation (used in later variants) eliminated this.\n\nThe vulnerability wasn't the reflector itself\u2014it was the **non-adaptive, symmetric nature** of that reflector combined with the mechanical structure. Post-war analysis: replacing the fixed reflector with a dynamic one would have been cryptographically sufficient against the Bombe.",
+  "thinking": "This is a RETRIEVAL territory query. The user is asking a factual/historical question about a well-documented cryptographic vulnerability\u2014a specific, named property of the Enigma reflector. This is not ambiguous, personal, novel, or requiring framework construction. It's a factual lookup.\n\nMode detection:\n- Factual lookup? YES \u2192 BYPASS\n- Genuine uncertainty with stakes? NO (historical fact with documented answer)\n- Can I name the existing framework/explanation? YES (Enigma reflector reciprocity property)\n\nThis is pure RETRIEVAL. The answer is well-analyzed, widely documented, and I can retrieve it directly.\n\nTerritory: RETRIEVAL\nMode: BYPASS\n\nI should provide the direct, accurate answer without scaffolding.",
+  "timestamp": "2026-01-23T13:20:44.774060"
+}
