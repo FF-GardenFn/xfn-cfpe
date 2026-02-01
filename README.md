@@ -48,7 +48,8 @@ A closed-loop system for developing and validating prompt engineering techniques
   - [benchmark_data/](./evaluation/benchmark_data/) - Datasets (GPQA, MATH-500, MMLU, GSM8K, HLE)
 - **RL-O-CoV/** - Reinforcement learning experiments
   - [README.md](./RL-O-CoV/README.md) - Approach and business case
-  - [RL_O_CoV_Training_V2.py](./RL-O-CoV/RL_O_CoV_Training_V2.py) - Training script
+  - [RL_O_CoV_Training_V2.py](RL-O-CoV/RL_O_CoV_Training_V2.py) - Training script
+  - [RL_O_CoV_Training_V3.py](RL-O-CoV/RL_O_CoV_Training_V3.py) - Latest Training script
 - **data/** - Experimental results
   - [haiku/](./data/haiku/), [sonnet/](./data/sonnet/), [opus/](./data/opus/) - Per-model results
   - [analysis/](./data/analysis/) - Evaluation reports
