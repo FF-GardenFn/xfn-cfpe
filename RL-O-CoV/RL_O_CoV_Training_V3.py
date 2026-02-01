@@ -4,7 +4,7 @@
 RL-O-CoV V2: Reinforcement Learning for Oscillatory Chain of Verification
 ================================================================================
 
-LESSONS FROM V1  FAILURE:
+LESSONS FROM V1 FAILURE:
 1. GSM8K too easy (88% baseline) - model doesn't need to oscillate
 2. Too many trainable params (342M @ 4.3%) with LR=3e-5 = catastrophic forgetting
 3. Goldilocks zone never hit (0%) - zone too narrow or similarity calc broken
@@ -25,13 +25,63 @@ import os
 import json
 import re
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
+
+
+# =============================================================================
+# REPRODUCIBILITY (Issue #2: No seeding)
+# =============================================================================
+
+def set_seed(seed: int = 42):
+    """Set all seeds for reproducibility"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Deterministic algorithms (slower but reproducible)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    try:
+        import transformers
+        transformers.set_seed(seed)
+    except ImportError:
+        pass
+
+    return seed
+
+
+def get_version_info() -> Dict[str, str]:
+    """Capture versions for reproducibility"""
+    import sys
+    versions = {
+        "python": sys.version,
+        "torch": torch.__version__,
+        "cuda": torch.version.cuda if torch.cuda.is_available() else "N/A",
+    }
+    try:
+        import transformers
+        versions["transformers"] = transformers.__version__
+    except ImportError:
+        pass
+    try:
+        import peft
+        versions["peft"] = peft.__version__
+    except ImportError:
+        pass
+    try:
+        import bitsandbytes
+        versions["bitsandbytes"] = bitsandbytes.__version__
+    except ImportError:
+        pass
+    return versions
 
 # %%
 # ============================================================================
@@ -81,9 +131,26 @@ class TrainingConfigV2:
     resonance_reward: float = 1.5     # Was 2.0
     drift_penalty_weight: float = 0.3 # Preserved from V1
 
-    # DATA
+    # DATA (Issue #3: Config-driven split)
     train_samples: int = 1000     # Was 2000
     eval_samples: int = 100
+    train_split_ratio: float = 0.8  # For GSM8K train/eval split
+    hard_mix_ratio: float = 0.2     # Fraction of harder problems in training
+
+    # REPRODUCIBILITY (Issue #2)
+    seed: int = 42
+
+    # REINFORCE BASELINE (Issue #4: Variance reduction)
+    use_baseline: bool = True
+    baseline_ema_decay: float = 0.9  # EMA for reward baseline
+    normalize_advantages: bool = True  # Normalize (r - baseline)
+
+    # MISSING PHASE PENALTY (Issue #6)
+    missing_phase_penalty: float = 0.3  # Per missing required phase
+
+    # CHECKPOINTING (Issue #1)
+    save_every_n_steps: int = 200
+    save_on_best: bool = True
 
     # EVALUATION
     eval_every_n_steps: int = 50  # More frequent checks
@@ -688,12 +755,57 @@ class RLOCovTrainerV2:
         self.best_accuracy = 0
         self.initial_accuracy = None
 
+        # REINFORCE baseline (Issue #4: Variance reduction)
+        self.reward_baseline = 0.0
+        self.reward_history_for_norm = []  # For advantage normalization
+
         # History
         self.history = {
-            "step": [], "loss": [], "reward": [],
+            "step": [], "loss": [], "reward": [], "advantage": [],
             "accuracy": [], "structure": [], "resonance": [],
-            "goldilocks_rate": [], "similarity": []
+            "goldilocks_rate": [], "similarity": [], "missing_phases": []
         }
+
+        # Metrics log for JSONL output (Issue #1)
+        self.metrics_log = []
+
+    def save_checkpoint(self, path: str, is_best: bool = False):
+        """Save LoRA adapter, tokenizer, config, and metrics (Issue #1)"""
+        import os
+        os.makedirs(path, exist_ok=True)
+
+        # 1. Save LoRA adapter weights
+        adapter_path = os.path.join(path, "adapter")
+        self.model.save_pretrained(adapter_path)
+        print(f"  ✓ Saved LoRA adapter to {adapter_path}")
+
+        # 2. Save tokenizer
+        tokenizer_path = os.path.join(path, "tokenizer")
+        self.tokenizer.save_pretrained(tokenizer_path)
+        print(f"  ✓ Saved tokenizer to {tokenizer_path}")
+
+        # 3. Save config snapshot
+        config_snapshot = {
+            "config": asdict(self.config),
+            "versions": get_version_info(),
+            "global_step": self.global_step,
+            "best_accuracy": self.best_accuracy,
+            "initial_accuracy": self.initial_accuracy,
+            "reward_baseline": self.reward_baseline,
+            "timestamp": datetime.now().isoformat(),
+            "is_best": is_best,
+        }
+        config_path = os.path.join(path, "config_snapshot.json")
+        with open(config_path, "w") as f:
+            json.dump(config_snapshot, f, indent=2, default=str)
+        print(f"  ✓ Saved config snapshot to {config_path}")
+
+        # 4. Save metrics JSONL
+        metrics_path = os.path.join(path, "metrics.jsonl")
+        with open(metrics_path, "w") as f:
+            for entry in self.metrics_log:
+                f.write(json.dumps(entry) + "\n")
+        print(f"  ✓ Saved {len(self.metrics_log)} metric entries to {metrics_path}")
 
     def format_prompt(self, problem: str) -> str:
         return TRAINING_PROMPT_TEMPLATE.format(problem=problem)
@@ -732,8 +844,8 @@ class RLOCovTrainerV2:
         full_sequence: torch.Tensor,
         prompt_length: int,
         reward: float
-    ) -> torch.Tensor:
-        """REINFORCE policy gradient loss"""
+    ) -> Tuple[torch.Tensor, float]:
+        """REINFORCE policy gradient loss with baseline (Issue #4)"""
 
         outputs = self.model(full_sequence.unsqueeze(0))
         logits = outputs.logits
@@ -744,21 +856,58 @@ class RLOCovTrainerV2:
         log_probs = F.log_softmax(shift_logits, dim=-1)
         token_log_probs = log_probs[0, torch.arange(len(shift_labels)), shift_labels]
 
+        # MASK SANITY CHECK (Issue #7: off-by-one risk)
+        # prompt_length is the number of tokens in the prompt
+        # We want to mask generated tokens only (indices >= prompt_length in shift_labels)
+        # shift_labels has length (seq_len - 1), corresponding to predictions for positions 1..seq_len
+        # So mask should be 1 for positions where we're predicting generated tokens
         mask = torch.zeros_like(token_log_probs)
-        mask[prompt_length-1:] = 1.0
+        # After shifting: position i predicts token i+1
+        # Prompt occupies positions 0..prompt_length-1, so generated starts at prompt_length
+        # In shifted space: we want positions prompt_length-1 onwards (predicting tokens prompt_length+)
+        gen_start = max(0, prompt_length - 1)
+        mask[gen_start:] = 1.0
+
+        # DEBUG: log mask coverage on first step
+        if self.global_step == 0:
+            print(f"  [DEBUG] prompt_length={prompt_length}, seq_len={len(full_sequence)}, "
+                  f"mask_start={gen_start}, masked_tokens={int(mask.sum().item())}")
+
+        # BASELINE AND ADVANTAGE (Issue #4: Variance reduction)
+        if self.config.use_baseline:
+            # Update EMA baseline
+            self.reward_baseline = (
+                self.config.baseline_ema_decay * self.reward_baseline +
+                (1 - self.config.baseline_ema_decay) * reward
+            )
+            advantage = reward - self.reward_baseline
+
+            # Optional advantage normalization
+            if self.config.normalize_advantages:
+                self.reward_history_for_norm.append(reward)
+                if len(self.reward_history_for_norm) > 100:
+                    self.reward_history_for_norm.pop(0)
+                if len(self.reward_history_for_norm) > 1:
+                    std = np.std(self.reward_history_for_norm) + 1e-8
+                    advantage = advantage / std
+        else:
+            advantage = reward
+
+        # Clamp advantage to prevent explosion
+        advantage = max(-5.0, min(5.0, advantage))
 
         # WARMUP: scale down learning signal early
         warmup_scale = min(1.0, self.global_step / self.config.warmup_steps)
 
         masked_log_probs = token_log_probs * mask
-        policy_loss = -reward * warmup_scale * masked_log_probs.sum()
+        policy_loss = -advantage * warmup_scale * masked_log_probs.sum()
 
         # Entropy bonus for exploration
         probs = F.softmax(shift_logits[0], dim=-1)
         entropy = -(probs * log_probs[0]).sum(dim=-1)
         entropy_bonus = 0.01 * (entropy * mask).mean()
 
-        return policy_loss - entropy_bonus
+        return policy_loss - entropy_bonus, advantage
 
     def train_step(self, problem: str, expected_answer: str) -> Dict:
         """Single training step with safety checks"""
@@ -775,7 +924,16 @@ class RLOCovTrainerV2:
             generated_text, expected_answer, problem
         )
 
-        loss = self.compute_policy_gradient_loss(full_sequence, prompt_length, reward)
+        # MISSING PHASE PENALTY (Issue #6)
+        missing_phases = sum(1 for phase, found in metrics["structure_found"].items() if not found)
+        if missing_phases > 0:
+            phase_penalty = missing_phases * self.config.missing_phase_penalty
+            reward -= phase_penalty
+            metrics["missing_phase_penalty"] = phase_penalty
+        else:
+            metrics["missing_phase_penalty"] = 0.0
+
+        loss, advantage = self.compute_policy_gradient_loss(full_sequence, prompt_length, reward)
         loss.backward()
 
         # Tight gradient clipping
@@ -791,14 +949,28 @@ class RLOCovTrainerV2:
         self.history["step"].append(self.global_step)
         self.history["loss"].append(loss.item())
         self.history["reward"].append(reward)
+        self.history["advantage"].append(advantage)
         self.history["accuracy"].append(metrics["accuracy_reward"])
         self.history["structure"].append(metrics["structure_reward"])
         self.history["resonance"].append(metrics["resonance_reward"])
         self.history["goldilocks_rate"].append(1.0 if metrics["in_goldilocks"] else 0.0)
+        self.history["missing_phases"].append(missing_phases)
         if metrics["hyp_osc_similarity"] is not None:
             self.history["similarity"].append(metrics["hyp_osc_similarity"])
 
-        return {"loss": loss.item(), "reward": reward, "metrics": metrics}
+        # Log to metrics JSONL (Issue #1)
+        self.metrics_log.append({
+            "step": self.global_step,
+            "loss": loss.item(),
+            "reward": reward,
+            "advantage": advantage,
+            "missing_phases": missing_phases,
+            "in_goldilocks": metrics["in_goldilocks"],
+            "accuracy_reward": metrics["accuracy_reward"],
+            "similarity": metrics.get("hyp_osc_similarity"),
+        })
+
+        return {"loss": loss.item(), "reward": reward, "advantage": advantage, "metrics": metrics}
 
     def evaluate(self, eval_data: List[Dict], num_samples: int = None) -> Dict:
         """Evaluate model"""
@@ -850,6 +1022,10 @@ def main():
 
     config = TrainingConfigV2()
 
+    # REPRODUCIBILITY (Issue #2)
+    set_seed(config.seed)
+    versions = get_version_info()
+
     print("=" * 70)
     print("RL-O-CoV V2: CONSERVATIVE MODE")
     print("   Learning from V1's catastrophic forgetting...")
@@ -862,6 +1038,13 @@ def main():
     print(f"  Warmup steps: {config.warmup_steps}")
     print(f"  Goldilocks Zone: [{config.goldilocks_low}, {config.goldilocks_high}]")
     print(f"  Analysis layer: {config.analysis_layer}")
+    print(f"  Seed: {config.seed}")
+    print(f"  REINFORCE baseline: {config.use_baseline}")
+    print(f"  Checkpoint every: {config.save_every_n_steps} steps")
+
+    print(f"\nVersions:")
+    for pkg, ver in versions.items():
+        print(f"  {pkg}: {ver}")
 
     # Load data
     print("\n" + "-" * 40)
@@ -911,8 +1094,11 @@ def main():
     )
     print(f"Hard problems: {len(hard_data)}")
 
-    # Mix easy and hard (80% GSM8K, 20% harder)
-    train_data = train_data[:800] + hard_data[:200]
+    # Mix easy and hard (config-driven split - Issue #3)
+    n_hard = int(len(train_data) * config.hard_mix_ratio)
+    n_easy = len(train_data) - n_hard
+    train_data = train_data[:n_easy] + hard_data[:n_hard]
+    print(f"Final mix: {n_easy} easy + {n_hard} hard = {len(train_data)} total")
     random.shuffle(train_data)
 
     # Load model
@@ -993,13 +1179,20 @@ def main():
             # Logging
             if trainer.global_step % config.log_every == 0:
                 stats = trainer.reward_calc.get_stats()
-                log_msg = f"Step {trainer.global_step} | Loss: {result['loss']:.4f} | Reward: {result['reward']:.3f}"
+                log_msg = f"Step {trainer.global_step} | Loss: {result['loss']:.4f} | R: {result['reward']:.2f} | A: {result['advantage']:.2f}"
 
                 if "sim_mean" in stats:
                     log_msg += f" | Sim: {stats['sim_mean']:.3f} [{stats['sim_min']:.2f}-{stats['sim_max']:.2f}]"
-                    log_msg += f" | Goldilocks: {stats['goldilocks_rate']*100:.1f}%"
+                    log_msg += f" | GL: {stats['goldilocks_rate']*100:.0f}%"
 
                 print(log_msg)
+
+            # CHECKPOINTING (Issue #1)
+            if trainer.global_step % config.save_every_n_steps == 0:
+                ckpt_path = os.path.join(config.output_dir, f"step_{trainer.global_step}")
+                print(f"\n--- Saving checkpoint at step {trainer.global_step} ---")
+                trainer.save_checkpoint(ckpt_path)
+                print()
 
             # Evaluation
             if trainer.global_step % config.eval_every_n_steps == 0:
@@ -1017,6 +1210,12 @@ def main():
                 if eval_result['accuracy'] > trainer.best_accuracy:
                     trainer.best_accuracy = eval_result['accuracy']
                     print(f"    ✓ New best accuracy: {trainer.best_accuracy:.2f}%")
+
+                    # Save best checkpoint (Issue #1)
+                    if config.save_on_best:
+                        best_path = os.path.join(config.output_dir, "best")
+                        print(f"    Saving best checkpoint...")
+                        trainer.save_checkpoint(best_path, is_best=True)
 
                 print("-" * 40 + "\n")
 
@@ -1049,6 +1248,18 @@ def main():
         print(f"  Mean: {stats['sim_mean']:.3f}")
         print(f"  Range: [{stats['sim_min']:.3f}, {stats['sim_max']:.3f}]")
         print(f"  In Goldilocks: {stats['goldilocks_rate']*100:.1f}%")
+
+    # SAVE FINAL CHECKPOINT (Issue #1)
+    print("\n" + "=" * 60)
+    print("SAVING FINAL CHECKPOINT")
+    print("=" * 60)
+    final_path = os.path.join(config.output_dir, "final")
+    trainer.save_checkpoint(final_path, is_best=False)
+    print(f"\n✓ All artifacts saved to {config.output_dir}")
+    print(f"  - final/adapter : LoRA weights")
+    print(f"  - final/tokenizer : Tokenizer")
+    print(f"  - final/config_snapshot.json : Reproducibility info")
+    print(f"  - final/metrics.jsonl : Training metrics")
 
     return trainer
 
