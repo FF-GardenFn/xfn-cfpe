@@ -900,7 +900,7 @@ class RLOCovTrainerV2:
         warmup_scale = min(1.0, self.global_step / self.config.warmup_steps)
 
         masked_log_probs = token_log_probs * mask
-        policy_loss = -advantage * warmup_scale * masked_log_probs.sum()
+        policy_loss = -advantage * warmup_scale * masked_log_probs.sum() / mask.sum().clamp(min=1)
 
         # Entropy bonus for exploration
         probs = F.softmax(shift_logits[0], dim=-1)
