@@ -101,5 +101,4 @@ archive/ # ignore all archive directories recursively
 alchemy/
 agents/archive/
 agents/.archive/
-CAI/
 CAI/.archive/
