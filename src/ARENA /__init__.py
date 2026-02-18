@@ -1,0 +1,1 @@
+"""ARENA — Adversarial Reasoning & Evaluation for Neural Agents."""
