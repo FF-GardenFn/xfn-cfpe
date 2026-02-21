@@ -118,12 +118,23 @@ class TrainingConfigV2:
     max_new_tokens: int = 768
     max_grad_norm: float = 0.5    # Was 1.0 (tighter clipping)
 
-    # SEMANTIC ANALYSIS (preserve V1's layer hook innovation)
-    analysis_layer: int = 20      # Deep layer for abstract reasoning
+    # SEMANTIC ANALYSIS
+    # V3 FIX: Layer 20 was too deep — at 71% depth, representations converge
+    # and hypothesis/oscillation sections always have similarity >0.86.
+    # Layer 14 (50% depth) retains more surface-level semantic differences.
+    analysis_layer: int = 14      # Was 20 (too deep, representations converge)
+    analysis_layers_to_log: List[int] = field(
+        default_factory=lambda: [8, 14, 20]  # Log multiple layers for calibration
+    )
+    use_first_sentence: bool = True  # Extract first sentence instead of mean-pooling entire section
 
-    # WIDER GOLDILOCKS ZONE (V1 never hit 0.3-0.8)
+    # WIDER GOLDILOCKS ZONE
+    # V3 FIX: Ceiling raised from 0.85 to 0.95 — at layer 20, similarity was
+    # always >0.86 so the zone NEVER fired. Even at layer 14, sections about
+    # the same problem will be correlated; 0.95 gives room for the reward signal
+    # to exist while we calibrate the optimal layer.
     goldilocks_low: float = 0.15  # Was 0.3
-    goldilocks_high: float = 0.85 # Was 0.8
+    goldilocks_high: float = 0.95 # Was 0.85 (V2 ceiling was too low for layer 20)
 
     # GENTLER REWARDS (prioritize not forgetting)
     correctness_weight: float = 2.5   # Higher than V1
@@ -161,8 +172,7 @@ class TrainingConfigV2:
     log_similarities: bool = True  # NEW: see actual cosine values
 
     # OUTPUT
-    output_dir: str = "./rl_ocov_v2_checkpoints"
-
+    output_dir: str = "./rl_ocov_v3_checkpoints"
 
 # %%
 # ============================================================================
@@ -187,6 +197,7 @@ Answer:"""
 # %%
 # ============================================================================
 # SEMANTIC CAPTURE (PRESERVED FROM V1 - key innovation)
+# V3 FIX: Added first-sentence extraction + multi-layer support
 # ============================================================================
 
 class SemanticCapture:
@@ -239,19 +250,66 @@ class SemanticCapture:
         return None
 
 
+def extract_first_sentence(text: str) -> str:
+    """
+    Extract the first meaningful sentence from a section.
+    
+    V3 FIX: Mean-pooling entire sections washes out differences because
+    both hypothesis and oscillation discuss the same problem. The first
+    sentence captures the *framing* ("I'll try algebra" vs "Testing: algebra
+    gives...") which is where sections genuinely differ.
+    """
+    # Strip the phase marker header
+    text = re.sub(r'^\[?(?:HYPOTHESIZE|OSCILLATION|SYNTHESIZE|DETECT)\]?\s*:?\s*', '', text.strip(), flags=re.IGNORECASE)
+    text = text.strip()
+    
+    if not text:
+        return text
+    
+    # Split on sentence boundaries
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    
+    # Take first 1-2 sentences (at least 20 chars to be meaningful)
+    result = sentences[0] if sentences else text
+    if len(result) < 20 and len(sentences) > 1:
+        result = ' '.join(sentences[:2])
+    
+    # Cap at ~150 chars to keep it focused
+    if len(result) > 150:
+        result = result[:150]
+    
+    return result
+
+
 def get_section_embedding(
     text: str,
     model,
     tokenizer,
     layer_idx: int,
-    max_length: int = 512
+    max_length: int = 512,
+    first_sentence_only: bool = False
 ) -> torch.Tensor:
-    """Get semantic embedding for a text section using layer hooks"""
+    """
+    Get semantic embedding for a text section using layer hooks.
+    
+    Args:
+        first_sentence_only: If True, extract and embed only the first sentence
+            instead of the entire section. This preserves semantic differences
+            between sections that discuss the same problem differently.
+    """
 
     if not text or len(text.strip()) < 10:
         hidden_size = model.config.hidden_size
         device = next(model.parameters()).device
         return torch.zeros(hidden_size, device=device)
+
+    # V3 FIX: Optionally extract first sentence for more discriminative embeddings
+    if first_sentence_only:
+        text = extract_first_sentence(text)
+        if not text or len(text.strip()) < 10:
+            hidden_size = model.config.hidden_size
+            device = next(model.parameters()).device
+            return torch.zeros(hidden_size, device=device)
 
     inputs = tokenizer(
         text,
@@ -263,6 +321,31 @@ def get_section_embedding(
     with SemanticCapture(model, layer_idx) as capturer:
         return capturer.get_embedding(inputs.input_ids)
 
+
+def get_multi_layer_similarity(
+    text_a: str,
+    text_b: str,
+    model,
+    tokenizer,
+    layers: List[int],
+    first_sentence_only: bool = False
+) -> Dict[int, float]:
+    """
+    Compute cosine similarity between two texts at multiple layers.
+    Used for calibration logging — helps find the optimal analysis layer.
+    """
+    similarities = {}
+    for layer_idx in layers:
+        emb_a = get_section_embedding(text_a, model, tokenizer, layer_idx,
+                                       first_sentence_only=first_sentence_only)
+        emb_b = get_section_embedding(text_b, model, tokenizer, layer_idx,
+                                       first_sentence_only=first_sentence_only)
+        if emb_a is not None and emb_b is not None:
+            sim = F.cosine_similarity(emb_a.unsqueeze(0), emb_b.unsqueeze(0)).item()
+            similarities[layer_idx] = sim
+        else:
+            similarities[layer_idx] = None
+    return similarities
 
 # %%
 # ============================================================================
@@ -482,7 +565,7 @@ def generate_synthetic_hard_problems(n: int) -> List[Dict]:
 
 # %%
 # ============================================================================
-# REWARD CALCULATOR (PRESERVED FROM V1 + improvements)
+# REWARD CALCULATOR (PRESERVED FROM V1 + V3 fixes for Goldilocks)
 # ============================================================================
 
 class OCovRewardCalculator:
@@ -492,6 +575,12 @@ class OCovRewardCalculator:
     - Structural integrity (phase markers)
     - Resonance (Goldilocks zone for hypothesis-oscillation similarity)
     - Drift penalty (staying on topic)
+    
+    V3 FIXES:
+    - First-sentence extraction for more discriminative embeddings
+    - Multi-layer similarity logging for calibration
+    - Layer 14 instead of 20 (mid-network, more diverse representations)
+    - Goldilocks ceiling 0.95 (was 0.85 — never fired at layer 20)
     """
 
     def __init__(self, model, tokenizer, config: TrainingConfigV2):
@@ -506,6 +595,9 @@ class OCovRewardCalculator:
         # Tracking for analysis
         self.similarity_history = []
         self.accuracy_history = []
+        
+        # V3: Multi-layer similarity tracking for calibration
+        self.multi_layer_history = {layer: [] for layer in config.analysis_layers_to_log}
 
     def extract_answer(self, text: str) -> str:
         """Extract the final answer from generated text"""
@@ -604,13 +696,19 @@ class OCovRewardCalculator:
         Calculate resonance reward (THE KEY INNOVATION from V1)
 
         Goldilocks Zone: hypothesis and oscillation should be
-        related but different (0.15 < similarity < 0.85)
+        related but different (0.15 < similarity < 0.95)
+        
+        V3 FIXES:
+        - Uses first-sentence extraction for more discriminative comparison
+        - Logs similarity at multiple layers for calibration
+        - Layer 14 (mid-network) instead of 20 (too deep)
         """
         sections = self.extract_sections(text)
         metrics = {
             "hyp_osc_similarity": None,
             "in_goldilocks": False,
-            "drift": 0.0
+            "drift": 0.0,
+            "multi_layer_sim": {},  # V3: per-layer similarities for calibration
         }
 
         hyp_text = sections["hypothesis"]
@@ -619,25 +717,43 @@ class OCovRewardCalculator:
         if len(hyp_text) < 20 or len(osc_text) < 20:
             return 0.0, metrics
 
-        # Get embeddings using LAYER HOOKS (V1's key innovation)
+        # V3: Use first-sentence extraction if configured
+        use_first = self.config.use_first_sentence
+
+        # Get embeddings at the primary analysis layer
         hyp_emb = get_section_embedding(
             hyp_text, self.model, self.tokenizer,
-            self.config.analysis_layer
+            self.config.analysis_layer,
+            first_sentence_only=use_first
         )
         osc_emb = get_section_embedding(
             osc_text, self.model, self.tokenizer,
-            self.config.analysis_layer
+            self.config.analysis_layer,
+            first_sentence_only=use_first
         )
 
         if hyp_emb is None or osc_emb is None:
             return 0.0, metrics
 
-        # Calculate cosine similarity
+        # Calculate cosine similarity at primary layer
         similarity = F.cosine_similarity(hyp_emb.unsqueeze(0), osc_emb.unsqueeze(0)).item()
         metrics["hyp_osc_similarity"] = similarity
         self.similarity_history.append(similarity)
 
-        # THE GOLDILOCKS ZONE (widened in V2)
+        # V3: Multi-layer calibration logging (every 10th step to save compute)
+        if len(self.similarity_history) % 10 == 1:
+            multi_sim = get_multi_layer_similarity(
+                hyp_text, osc_text,
+                self.model, self.tokenizer,
+                self.config.analysis_layers_to_log,
+                first_sentence_only=use_first
+            )
+            metrics["multi_layer_sim"] = multi_sim
+            for layer_idx, sim_val in multi_sim.items():
+                if sim_val is not None:
+                    self.multi_layer_history[layer_idx].append(sim_val)
+
+        # THE GOLDILOCKS ZONE (V3: widened ceiling to 0.95)
         resonance_reward = 0.0
         if self.config.goldilocks_low < similarity < self.config.goldilocks_high:
             resonance_reward = self.config.resonance_reward
@@ -722,8 +838,15 @@ class OCovRewardCalculator:
         if self.accuracy_history:
             stats["accuracy"] = sum(self.accuracy_history[-100:]) / min(100, len(self.accuracy_history))
 
-        return stats
+        # V3: Multi-layer stats for calibration
+        for layer_idx, layer_sims in self.multi_layer_history.items():
+            if layer_sims:
+                recent = layer_sims[-20:]
+                stats[f"sim_L{layer_idx}_mean"] = sum(recent) / len(recent)
+                stats[f"sim_L{layer_idx}_min"] = min(recent)
+                stats[f"sim_L{layer_idx}_max"] = max(recent)
 
+        return stats
 
 # %%
 # ============================================================================
@@ -1027,8 +1150,9 @@ def main():
     versions = get_version_info()
 
     print("=" * 70)
-    print("RL-O-CoV V2: CONSERVATIVE MODE")
-    print("   Learning from V1's catastrophic forgetting...")
+    print("RL-O-CoV V3: GOLDILOCKS FIX")
+    print("   V2 had 0% Goldilocks rate — similarity always >0.86 at layer 20")
+    print("   V3 fixes: layer 14, first-sentence extraction, ceiling 0.95")
     print("=" * 70)
     print(f"\nConfiguration:")
     print(f"  Model: {config.model_name}")
@@ -1036,8 +1160,10 @@ def main():
     print(f"  LoRA rank: {config.lora_r} (V1 had 128)")
     print(f"  Learning rate: {config.learning_rate} (V1 had 3e-5)")
     print(f"  Warmup steps: {config.warmup_steps}")
-    print(f"  Goldilocks Zone: [{config.goldilocks_low}, {config.goldilocks_high}]")
-    print(f"  Analysis layer: {config.analysis_layer}")
+    print(f"  Analysis layer: {config.analysis_layer} (V2 had 20 — too deep)")
+    print(f"  First-sentence extraction: {config.use_first_sentence}")
+    print(f"  Goldilocks Zone: [{config.goldilocks_low}, {config.goldilocks_high}] (V2 had [0.15, 0.85])")
+    print(f"  Multi-layer logging: {config.analysis_layers_to_log}")
     print(f"  Seed: {config.seed}")
     print(f"  REINFORCE baseline: {config.use_baseline}")
     print(f"  Checkpoint every: {config.save_every_n_steps} steps")
@@ -1051,34 +1177,29 @@ def main():
     print("Loading datasets...")
 
     # Define paths to local benchmark data (if available)
-    # Handle both script execution and Colab/notebook environment
     gsm8k_path = None
     math500_path = None
 
     try:
-        # Works when running as a script
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(script_dir)
         benchmark_dir = os.path.join(project_root, "evaluation", "benchmark_data")
         gsm8k_path = os.path.join(benchmark_dir, "gsm8k_test.jsonl")
         math500_path = os.path.join(benchmark_dir, "math_500.jsonl")
 
-        # Verify they exist
         if not os.path.exists(gsm8k_path):
             gsm8k_path = None
         if not os.path.exists(math500_path):
             math500_path = None
 
         print(f"Local dataset check:")
-        print(f"  GSM8K: {'✓ Found' if gsm8k_path else '✗ Not found'}")
-        print(f"  MATH-500: {'✓ Found' if math500_path else '✗ Not found'}")
+        print(f"  GSM8K: {'Found' if gsm8k_path else 'Not found'}")
+        print(f"  MATH-500: {'Found' if math500_path else 'Not found'}")
     except NameError:
-        # __file__ not defined (Colab/notebook environment)
         print("Running in notebook environment - will download datasets from HuggingFace")
 
-    # Load GSM8K (local first, then HuggingFace fallback)
     gsm8k_data = load_gsm8k_data(
-        path=gsm8k_path,  # None if not found or in Colab
+        path=gsm8k_path,
         num_samples=config.train_samples + config.eval_samples
     )
     random.shuffle(gsm8k_data)
@@ -1087,14 +1208,13 @@ def main():
 
     print(f"Train: {len(train_data)}, Eval: {len(eval_data)}")
 
-    # Load harder problems (local MATH-500 first, then fallbacks)
     hard_data = load_harder_math_data(
-        path=math500_path,  # None if not found or in Colab
+        path=math500_path,
         num_samples=200
     )
     print(f"Hard problems: {len(hard_data)}")
 
-    # Mix easy and hard (config-driven split - Issue #3)
+    # Mix easy and hard (config-driven split)
     n_hard = int(len(train_data) * config.hard_mix_ratio)
     n_easy = len(train_data) - n_hard
     train_data = train_data[:n_easy] + hard_data[:n_hard]
@@ -1131,9 +1251,6 @@ def main():
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
     
     # CRITICAL FIX: Disable gradient checkpointing to restore gradient flow
-    # prepare_model_for_kbit_training enables it by default, but it breaks
-    # gradient flow to LoRA adapters in 4-bit mode, causing:
-    # "None of the inputs have requires_grad=True. Gradients will be None"
     model.gradient_checkpointing_disable()
 
     lora_config = LoraConfig(
@@ -1182,10 +1299,19 @@ def main():
                 log_msg = f"Step {trainer.global_step} | Loss: {result['loss']:.4f} | R: {result['reward']:.2f} | A: {result['advantage']:.2f}"
 
                 if "sim_mean" in stats:
-                    log_msg += f" | Sim: {stats['sim_mean']:.3f} [{stats['sim_min']:.2f}-{stats['sim_max']:.2f}]"
+                    log_msg += f" | Sim@L{config.analysis_layer}: {stats['sim_mean']:.3f} [{stats['sim_min']:.2f}-{stats['sim_max']:.2f}]"
                     log_msg += f" | GL: {stats['goldilocks_rate']*100:.0f}%"
 
                 print(log_msg)
+
+                # V3: Log multi-layer calibration every 50 steps
+                if trainer.global_step % 50 == 0:
+                    layer_msg = "  [CALIBRATION]"
+                    for layer_idx in config.analysis_layers_to_log:
+                        key = f"sim_L{layer_idx}_mean"
+                        if key in stats:
+                            layer_msg += f" L{layer_idx}={stats[key]:.3f}"
+                    print(layer_msg)
 
             # CHECKPOINTING (Issue #1)
             if trainer.global_step % config.save_every_n_steps == 0:
@@ -1209,9 +1335,8 @@ def main():
 
                 if eval_result['accuracy'] > trainer.best_accuracy:
                     trainer.best_accuracy = eval_result['accuracy']
-                    print(f"    ✓ New best accuracy: {trainer.best_accuracy:.2f}%")
+                    print(f"    New best accuracy: {trainer.best_accuracy:.2f}%")
 
-                    # Save best checkpoint (Issue #1)
                     if config.save_on_best:
                         best_path = os.path.join(config.output_dir, "best")
                         print(f"    Saving best checkpoint...")
@@ -1244,18 +1369,27 @@ def main():
 
     stats = trainer.reward_calc.get_stats()
     if "sim_mean" in stats:
-        print(f"\nSimilarity Stats:")
+        print(f"\nSimilarity Stats (primary layer {config.analysis_layer}):")
         print(f"  Mean: {stats['sim_mean']:.3f}")
         print(f"  Range: [{stats['sim_min']:.3f}, {stats['sim_max']:.3f}]")
         print(f"  In Goldilocks: {stats['goldilocks_rate']*100:.1f}%")
 
-    # SAVE FINAL CHECKPOINT (Issue #1)
+        # V3: Show multi-layer comparison
+        print(f"\nMulti-Layer Calibration:")
+        for layer_idx in config.analysis_layers_to_log:
+            key = f"sim_L{layer_idx}_mean"
+            if key in stats:
+                marker = " <-- PRIMARY" if layer_idx == config.analysis_layer else ""
+                print(f"  Layer {layer_idx}: mean={stats[key]:.3f} "
+                      f"[{stats[f'sim_L{layer_idx}_min']:.3f}, {stats[f'sim_L{layer_idx}_max']:.3f}]{marker}")
+
+    # SAVE FINAL CHECKPOINT
     print("\n" + "=" * 60)
     print("SAVING FINAL CHECKPOINT")
     print("=" * 60)
     final_path = os.path.join(config.output_dir, "final")
     trainer.save_checkpoint(final_path, is_best=False)
-    print(f"\n✓ All artifacts saved to {config.output_dir}")
+    print(f"\nAll artifacts saved to {config.output_dir}")
     print(f"  - final/adapter : LoRA weights")
     print(f"  - final/tokenizer : Tokenizer")
     print(f"  - final/config_snapshot.json : Reproducibility info")

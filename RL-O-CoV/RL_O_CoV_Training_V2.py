@@ -68,12 +68,17 @@ class TrainingConfigV2:
     max_new_tokens: int = 768
     max_grad_norm: float = 0.5    # Was 1.0 (tighter clipping)
 
-    # SEMANTIC ANALYSIS (preserve V1's layer hook innovation)
-    analysis_layer: int = 20      # Deep layer for abstract reasoning
+    # SEMANTIC ANALYSIS
+    # V3 FIX: Layer 20 was too deep (71% depth) — representations converge,
+    # hypothesis/oscillation similarity always >0.86. Layer 14 (50% depth)
+    # retains more surface-level semantic differences.
+    analysis_layer: int = 14      # Was 20 (too deep, representations converge)
+    use_first_sentence: bool = True  # Extract first sentence instead of mean-pooling
 
-    # WIDER GOLDILOCKS ZONE (V1 never hit 0.3-0.8)
+    # WIDER GOLDILOCKS ZONE
+    # V3 FIX: Ceiling raised from 0.85 to 0.95 — zone never fired at layer 20.
     goldilocks_low: float = 0.15  # Was 0.3
-    goldilocks_high: float = 0.85 # Was 0.8
+    goldilocks_high: float = 0.95 # Was 0.85 (ceiling was below observed similarity)
 
     # GENTLER REWARDS (prioritize not forgetting)
     correctness_weight: float = 2.5   # Higher than V1
@@ -172,12 +177,34 @@ class SemanticCapture:
         return None
 
 
+def extract_first_sentence(text: str) -> str:
+    """
+    Extract the first meaningful sentence from a section.
+
+    V3 FIX: Mean-pooling entire sections washes out differences because
+    both hypothesis and oscillation discuss the same problem. The first
+    sentence captures the *framing* which is where sections genuinely differ.
+    """
+    text = re.sub(r'^\[?(?:HYPOTHESIZE|OSCILLATION|SYNTHESIZE|DETECT)\]?\s*:?\s*', '', text.strip(), flags=re.IGNORECASE)
+    text = text.strip()
+    if not text:
+        return text
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    result = sentences[0] if sentences else text
+    if len(result) < 20 and len(sentences) > 1:
+        result = ' '.join(sentences[:2])
+    if len(result) > 150:
+        result = result[:150]
+    return result
+
+
 def get_section_embedding(
     text: str,
     model,
     tokenizer,
     layer_idx: int,
-    max_length: int = 512
+    max_length: int = 512,
+    first_sentence_only: bool = False
 ) -> torch.Tensor:
     """Get semantic embedding for a text section using layer hooks"""
 
@@ -185,6 +212,14 @@ def get_section_embedding(
         hidden_size = model.config.hidden_size
         device = next(model.parameters()).device
         return torch.zeros(hidden_size, device=device)
+
+    # V3 FIX: Optionally extract first sentence for more discriminative embeddings
+    if first_sentence_only:
+        text = extract_first_sentence(text)
+        if not text or len(text.strip()) < 10:
+            hidden_size = model.config.hidden_size
+            device = next(model.parameters()).device
+            return torch.zeros(hidden_size, device=device)
 
     inputs = tokenizer(
         text,
@@ -553,13 +588,17 @@ class OCovRewardCalculator:
             return 0.0, metrics
 
         # Get embeddings using LAYER HOOKS (V1's key innovation)
+        # V3 FIX: Use first-sentence extraction for more discriminative comparison
+        use_first = getattr(self.config, 'use_first_sentence', False)
         hyp_emb = get_section_embedding(
             hyp_text, self.model, self.tokenizer,
-            self.config.analysis_layer
+            self.config.analysis_layer,
+            first_sentence_only=use_first
         )
         osc_emb = get_section_embedding(
             osc_text, self.model, self.tokenizer,
-            self.config.analysis_layer
+            self.config.analysis_layer,
+            first_sentence_only=use_first
         )
 
         if hyp_emb is None or osc_emb is None:
