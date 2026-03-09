@@ -148,14 +148,15 @@ class DebateProtocol(Protocol):
         self.opponent = opponent
         self.judge = judge
         self.config = config or DebateConfig()
-        self._processor = None  # Lazy init
+        self._processors: dict[str, Any] = {}  # provider -> Processor
 
-    def _get_processor(self):
-        """Lazy-init the processor from get_responses."""
-        if self._processor is None:
+    def _get_processor(self, provider: str) -> Any:
+        """Get or create a Processor for the given provider."""
+        if provider not in self._processors:
             from get_responses.processor import Processor
-            self._processor = Processor()
-        return self._processor
+            from get_responses.providers import get_provider
+            self._processors[provider] = Processor(provider=get_provider(provider))
+        return self._processors[provider]
 
     def _call_model(
         self,
@@ -163,17 +164,17 @@ class DebateProtocol(Protocol):
         prompt: str,
         role: Role,
     ) -> ProtocolTurn:
-        """Make a single model call via the get_responses infrastructure.
+        """Make a single model call, routing to the correct provider.
 
         Args:
-            config: Model configuration.
+            config: Model configuration (includes provider and model).
             prompt: The prompt to send.
             role: The role of this participant.
 
         Returns:
             ProtocolTurn with response and metrics.
         """
-        processor = self._get_processor()
+        processor = self._get_processor(config.provider)
 
         response = processor.run_single(
             prompt=prompt,
@@ -193,6 +194,10 @@ class DebateProtocol(Protocol):
             tokens_used=response.usage.total_tokens,
             thinking_tokens=getattr(response.usage, 'thinking_tokens', 0) or 0,
             latency_ms=response.latency_ms,
+            metadata={
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+            },
         )
 
     def run(self, task: Any, **kwargs) -> DebateResult:
