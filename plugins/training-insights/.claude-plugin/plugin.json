@@ -1,0 +1,9 @@
+{
+  "name": "training-insights",
+  "description": "Autonomous training experiment platform with multi-dimensional checkpoint evaluation. Composite reward scoring (R = alpha*quality - beta*cost - gamma*safety), sequential decision gates, family attribution, Pareto frontier, and safety drift detection. Researchers describe a direction; the agent proposes hypotheses, edits hyperparameters, runs training, evaluates checkpoints, and iterates.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Faycal Farhat",
+    "email": "faycal.farhat@mail.mcgill.ca"
+  }
+}

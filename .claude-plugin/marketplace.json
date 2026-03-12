@@ -1,0 +1,25 @@
+{
+  "name": "xfn-cfpe",
+  "owner": {
+    "name": "Faycal Farhat",
+    "email": "faycal.farhat@mail.mcgill.ca"
+  },
+  "metadata": {
+    "description": "Autonomous training experiment platform with multi-dimensional checkpoint evaluation"
+  },
+  "plugins": [
+    {
+      "name": "training-insights",
+      "source": "./plugins/training-insights",
+      "description": "Autonomous training experiment loop — researchers describe a direction, Claude proposes hypotheses, edits hyperparameters, runs training, evaluates checkpoints with composite reward scoring, and iterates",
+      "version": "0.1.0",
+      "author": {
+        "name": "Faycal Farhat"
+      },
+      "repository": "https://github.com/FF-GardenFn/XFN-CFPE",
+      "license": "MIT",
+      "keywords": ["training", "evaluation", "checkpoint", "hyperparameter", "autonomous", "composite-reward"],
+      "category": "research"
+    }
+  ]
+}

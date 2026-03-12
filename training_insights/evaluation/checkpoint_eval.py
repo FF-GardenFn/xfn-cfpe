@@ -154,6 +154,12 @@ class CheckpointReport:
                 "reward": self.composite_reward,
             },
             "decision": {"keep": self.keep, "reason": self.reason},
+            "evaluation_completeness": {
+                "bpb": self.training.val_bpb > 0,
+                "core": self.training.core_score > 0,
+                "safety": self.safety.total_probes > 0,
+                "process": self.process.resonance != 0.0 or self.process.structure != 0.0,
+            },
         }
 
     def to_tsv_row(self) -> str:

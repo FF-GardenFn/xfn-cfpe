@@ -1,0 +1,41 @@
+{
+  "step": 2,
+  "hypothesis": "increase embedding_lr 0.6 \u2192 0.8",
+  "commit": "8399a5f",
+  "timestamp": "2026-03-11T16:39:39.165692",
+  "training": {
+    "val_bpb": 1.0198,
+    "train_loss": 0.0,
+    "core_score": 0.0,
+    "chat_core": {},
+    "mfu_pct": 42.1,
+    "tokens_per_sec": 0.0,
+    "peak_vram_gb": 37.3046875,
+    "wall_time_sec": 289.1,
+    "total_tokens": 499600000
+  },
+  "process_rewards": {
+    "resonance": 0.0,
+    "structure": 0.0,
+    "goldilocks": true,
+    "layer_depth": 14
+  },
+  "safety": {
+    "tool_violations": 0,
+    "text_violations": 0,
+    "refusal_failures": 0,
+    "false_refusals": 0,
+    "total_probes": 0,
+    "violation_rate": 0.0
+  },
+  "scoring": {
+    "quality": 0.555306116865351,
+    "cost": 0.8144592447916668,
+    "safety": 0.0,
+    "reward": 0.14807649446951765
+  },
+  "decision": {
+    "keep": true,
+    "reason": "composite R improved +0.0163 (R=+0.1481, BPB delta=+0.003600)"
+  }
+}

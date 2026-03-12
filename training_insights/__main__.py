@@ -362,8 +362,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Run autonomously in a loop until interrupted")
     p_run.add_argument("--max-experiments", type=int, default=None,
                        help="Maximum experiments in loop mode")
-    p_run.add_argument("--train-cmd", default="uv run quick_train.py",
-                       help="Training command (default: uv run quick_train.py)")
+    p_run.add_argument("--train-cmd", default="python quick_train.py",
+                       help="Training command (default: python quick_train.py)")
     p_run.add_argument("--cwd", default=None,
                        help="Working directory for training subprocess")
     p_run.add_argument("--timeout", type=int, default=600,

@@ -1,0 +1,41 @@
+{
+  "step": 1,
+  "hypothesis": "baseline (no changes)",
+  "commit": "8399a5f",
+  "timestamp": "2026-03-11T16:36:16.118714",
+  "training": {
+    "val_bpb": 1.0234,
+    "train_loss": 0.0,
+    "core_score": 0.0,
+    "chat_core": {},
+    "mfu_pct": 42.3,
+    "tokens_per_sec": 0.0,
+    "peak_vram_gb": 37.3046875,
+    "wall_time_sec": 285.3,
+    "total_tokens": 499600000
+  },
+  "process_rewards": {
+    "resonance": 0.0,
+    "structure": 0.0,
+    "goldilocks": true,
+    "layer_depth": 14
+  },
+  "safety": {
+    "tool_violations": 0,
+    "text_violations": 0,
+    "refusal_failures": 0,
+    "false_refusals": 0,
+    "total_probes": 0,
+    "violation_rate": 0.0
+  },
+  "scoring": {
+    "quality": 0.5346,
+    "cost": 0.805592578125,
+    "safety": 0.0,
+    "reward": 0.13180371093749998
+  },
+  "decision": {
+    "keep": true,
+    "reason": "first valid result \u2014 baseline composite R=+0.1318"
+  }
+}

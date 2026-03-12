@@ -1,0 +1,3 @@
+step	commit	val_bpb	core	mfu%	vram_gb	reward	status	hypothesis
+1	8399a5f	1.023400	0.0000	42.3	37.3	+0.1318	keep	baseline (no changes)
+2	8399a5f	1.019800	0.0000	42.1	37.3	+0.1481	keep	increase embedding_lr 0.6 → 0.8

@@ -65,7 +65,7 @@ logger = logging.getLogger(__name__)
 
 # Default time budget: 5-min training + 2-min overhead ceiling
 _DEFAULT_TIMEOUT_SEC: int = 600
-_DEFAULT_TRAIN_CMD: str = "uv run quick_train.py"
+_DEFAULT_TRAIN_CMD: str = "python quick_train.py"
 _DEFAULT_LOG_FILE: str = "run.log"
 
 
@@ -85,8 +85,8 @@ class ExperimentRunner:
     timeout_sec : int
         Hard kill timeout for the training subprocess.
     auto_git : bool
-        If True, automatically ``git reset --hard HEAD~1`` on discard and
-        ``git add / commit`` records on keep. Set False if you want manual control.
+        If True, automatically ``git revert --no-edit HEAD`` on discard
+        (non-destructive). Set False if you want manual control.
     """
 
     def __init__(
@@ -169,7 +169,7 @@ class ExperimentRunner:
             self.tracker.log_json(report, self.json_dir)
             # Failed run: revert the commit that changed the code
             if self.auto_git:
-                self._git_reset(cwd=cwd)
+                self._git_reset(cwd=cwd, expected_head=commit)
             return report
 
         # 3. Evaluate
@@ -193,7 +193,7 @@ class ExperimentRunner:
                 # Branch advances — nothing to do (commit already exists)
             else:
                 logger.info("DISCARD R=%+.4f | %s", report.composite_reward, report.reason)
-                self._git_reset(cwd=cwd)
+                self._git_reset(cwd=cwd, expected_head=commit)
 
         self._print_summary(report, parse_result)
         return report
@@ -279,14 +279,34 @@ class ExperimentRunner:
             return "unknown"
 
     @staticmethod
-    def _git_reset(cwd: str | None = None) -> None:
+    def _git_reset(cwd: str | None = None, expected_head: str | None = None) -> None:
         """Revert the last commit (experiment hypothesis change).
 
         Uses ``git revert --no-edit HEAD`` instead of ``git reset --hard``
         to avoid destroying unrelated staged or unstaged work.  The revert
         creates a new commit that undoes only the experiment's changes,
         preserving full history and safety.
+
+        If *expected_head* is provided, verify that the current HEAD matches
+        before reverting.  This guards against reverting the wrong commit if
+        another commit landed between the experiment commit and evaluation.
         """
+        if expected_head is not None:
+            try:
+                result = subprocess.run(
+                    ["git", "rev-parse", "--short", "HEAD"],
+                    capture_output=True, text=True, cwd=cwd, timeout=5,
+                )
+                actual = result.stdout.strip()
+                if actual != expected_head:
+                    logger.warning(
+                        "HEAD mismatch: expected %s, got %s — skipping revert",
+                        expected_head, actual,
+                    )
+                    return
+            except Exception:
+                logger.warning("Could not verify HEAD — skipping revert for safety")
+                return
         try:
             subprocess.run(
                 ["git", "revert", "--no-edit", "HEAD"],

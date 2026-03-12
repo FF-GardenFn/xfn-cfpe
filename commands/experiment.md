@@ -1,144 +1,106 @@
 # /experiment — Autonomous Training Experiment
 
-You are running an autonomous training experiment loop. Your job is to improve
-the model's val_bpb (bits-per-byte) metric by modifying hyperparameters in the
-training code.
+You are the agent brain in an autonomous training experiment loop. The researcher
+gives a direction; you read insights, propose hypotheses, modify hyperparameters,
+run training, evaluate results, and iterate.
 
-## Setup
+**Researcher's direction**: $ARGUMENTS
 
-All work happens in the `training_insights/` directory. Before running any
-Python imports from the evaluation pipeline, ensure PYTHONPATH includes the
-project root:
+## Environment Setup
 
 ```bash
+export TI_ROOT="/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
 export PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
-cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
+export PYTHON="$TI_ROOT/../bin/python3"
 ```
 
-The Python interpreter is at `../bin/python3` (project venv).
+All `ti` commands: `cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights <command>`
 
-## Context
+## Your Loop
 
-The training engine is based on Karpathy's autoresearch/nanochat infrastructure.
-The evaluation pipeline uses ARENA's composite reward: R = α·quality − β·cost − γ·safety.
+Repeat until the researcher's direction is explored (typically 3-5 experiments):
 
-## Files You Can Edit
+### Step 1: Read Insights
 
-- `training_insights/quick_train.py` — Single-GPU trainer (5-min experiments)
-  - Hyperparameters are constants at the top: DEPTH, ASPECT_RATIO, HEAD_DIM,
-    WINDOW_PATTERN, TOTAL_BATCH_SIZE, learning rates, WEIGHT_DECAY, etc.
-- `training_insights/scripts/base_train.py` — Multi-GPU trainer (configurable)
-  - Configure via CLI args: --depth, --device-batch-size, --target-flops, etc.
+```bash
+cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights analyze
+```
 
-## Files You Must NOT Edit
+This prints:
+- **Promising families**: positive mean ΔR — explore these first
+- **Dead-end families**: consistently negative ΔR — skip
+- **Safety status**: if CAI inversion detected, prioritise safe experiments
+- **Top-3 kept experiments**: what worked best so far
+- **Suggested next direction**: where the insight engine thinks you should go
 
-- `training_insights/core/` — Model architecture, optimizer, data pipeline (fixed)
-- `training_insights/tasks/` — Evaluation tasks (fixed metrics)
-- `training_insights/evaluation/` — Scoring pipeline (fixed methodology)
+If no experiments exist yet, run a baseline first.
 
-## Experiment Loop
+### Step 2: Read Current Config
 
-For each experiment:
+Read `$TI_ROOT/quick_train.py` — hyperparameters are **constants at the top**:
+`DEPTH`, `ASPECT_RATIO`, `HEAD_DIM`, `WINDOW_PATTERN`, `TOTAL_BATCH_SIZE`,
+learning rates (`embedding_lr`, `unembedding_lr`, `matrix_lr`, `scalar_lr`),
+`WEIGHT_DECAY`, `WARMDOWN_RATIO`, etc.
 
-1. **Read results history + extract insights**: Before proposing anything, run the
-   insight engine to understand what has worked and what hasn't:
-   ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-   PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " ../bin/python3 -c "
-   from training_insights.evaluation.insights import InsightEngine
-   from pathlib import Path
-   engine = InsightEngine(results_file=Path('results.tsv'), json_dir=Path('runs'))
-   insights = engine.analyze()
-   print(insights.summary())
-   print()
-   print(insights.next_hypothesis_context())
-   "
-   ```
-   Read the output carefully:
-   - **Promising families**: hyperparameter groups with positive mean ΔR — try first
-   - **Dead-ends**: families with consistently negative ΔR — skip these
-   - **Safety drift**: if CAI inversion is detected, prioritise safe experiments
-   - **Pareto frontier**: avoid cost-heavy experiments unless quality gain is substantial
+These constants ARE the experiment config. You edit them, nothing else.
 
-2. **Propose a hypothesis**: Informed by the insight context above. Be specific:
-   - BAD: "try different learning rate"
-   - GOOD: "increase embedding_lr from 0.6 to 0.8 — insight engine shows embedding_lr
-     is the top promising family (mean ΔR=+0.023), and current BPB plateau suggests
-     embeddings are underfitting"
-   - GOOD: "skip window_pattern — insight engine classified it as dead-end
-     (mean ΔR=-0.015 across 4 experiments); try batch_size instead"
+### Step 3: Propose + Edit + Commit
 
-3. **Make ONE change**: Edit exactly one hyperparameter or a small related group.
-   Multiple changes confound results.
+Turn the researcher's direction into a specific, measurable change.
 
-4. **Commit**: `git add training_insights/quick_train.py && git commit -m "experiment N: <hypothesis>"`
+**Be precise in hypothesis naming** — the insight engine classifies experiments
+by family (learning_rate, window_pattern, batch_size, depth, width, etc.):
+- GOOD: `"increase embedding_lr 0.6 → 0.8 — promising family, mean ΔR=+0.023"`
+- BAD: `"try different learning rate"`
 
-5. **Run training**:
-   ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-   ../bin/python3 quick_train.py 2>&1 | tee run.log
-   ```
-   Or multi-GPU:
-   ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-   torchrun --nproc_per_node=8 scripts/base_train.py --depth 8
-   ```
+Make **ONE change** (or small related group) in `quick_train.py`. Then:
+```bash
+cd "$TI_ROOT" && git add quick_train.py && git commit -m "experiment: <hypothesis>"
+```
 
-6. **Parse + Evaluate**: Use the runner to parse stdout and compute composite reward:
-   ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-   PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " ../bin/python3 -c "
-   from training_insights.evaluation.runner import ExperimentRunner
-   from pathlib import Path
-   runner = ExperimentRunner(
-       results_file=Path('results.tsv'),
-       json_dir=Path('runs'),
-       auto_git=False,
-   )
-   report = runner.evaluate_output('run.log', hypothesis='YOUR HYPOTHESIS HERE', commit='COMMIT_HASH')
-   print(f'Decision: {\"KEEP\" if report.keep else \"DISCARD\"}')
-   print(f'Reason:   {report.reason}')
-   print(f'Reward:   R={report.composite_reward:+.4f}')
-   print(f'Quality:  Q={report.quality_score:.3f}')
-   print(f'Cost:     C={report.operational_cost:.3f}')
-   print(f'Safety:   S={report.safety_penalty:.3f}')
-   "
-   ```
+### Step 4: Run Training + Evaluate
 
-   Decision policy (applied automatically by the evaluator):
-   - **Safety veto**: safety_pen ≥ 0.5 → DISCARD unconditionally
-   - **BPB divergence floor**: regression > 5% → DISCARD unconditionally
-   - **Composite improvement**: ΔR > 0.001 → KEEP
-   - **BPB improved but composite did not**: DISCARD (cost/safety offset)
+```bash
+cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights run \
+  -H "your hypothesis here" \
+  --train-cmd "$PYTHON quick_train.py" \
+  --cwd "$TI_ROOT"
+```
 
-7. **Git keep/discard**: If DISCARD, revert: `git reset --hard HEAD~1`
+This single command does everything:
+1. Runs training subprocess (with timeout)
+2. Parses stdout → TrainingMetrics (val_bpb, MFU, VRAM, wall time)
+3. Computes composite reward: R = α·quality − β·cost − γ·safety
+4. Applies decision gates in order:
+   - Safety veto (penalty ≥ 0.5 → DISCARD unconditionally)
+   - BPB divergence floor (> 5% regression → DISCARD)
+   - Composite improvement (ΔR > 0.001 → KEEP, baseline updated)
+5. Logs to results.tsv + runs/*.json
+6. Git revert on DISCARD (non-destructive)
 
-8. **Reflect + re-run insights**: Re-run the insight engine (step 1) after logging.
-   Check:
-   - Did the family verdict change (neutral → promising or → dead-end)?
-   - Did the Pareto frontier shift?
-   - Did safety drift worsen? (CAI inversion is subtle — capability can improve
-     while safety regresses)
-   - What is the highest-priority hypothesis for the next experiment?
+### Step 5: Reflect + Iterate
 
-## What to Try (Priority Order)
+Re-run `ti analyze` (Step 1). Check:
+- Did the family verdict change? (neutral → promising, or → dead-end)
+- Did the Pareto frontier shift?
+- Is the researcher's direction exhausted, or should you try another value?
+- What does the insight engine suggest next?
 
-1. **Learning rates**: 4-group structure (embedding, unembedding, matrix, scalar)
-2. **Window pattern**: SSSL, SSLL, SLSL — attention budget allocation
-3. **Batch size**: Larger batches smooth gradients but reduce update frequency
-4. **Depth vs width**: ASPECT_RATIO controls the tradeoff
-5. **Warmdown ratio**: LR cooldown schedule
-6. **Weight decay**: Muon uses cautious WD (sign-matched)
+Then go back to Step 3 with the next hypothesis, or stop if converged.
 
-## What NOT to Try
+## What You Can Edit
 
-- Do not change the model architecture in `core/gpt.py`
-- Do not change the evaluation in `core/loss_eval.py` or `tasks/`
-- Do not change the data pipeline in `core/dataloader.py`
-- Do not change the optimizer algorithm in `core/optim.py`
+- `$TI_ROOT/quick_train.py` — hyperparameter constants at top (the config)
+- `$TI_ROOT/scripts/base_train.py` — multi-GPU trainer (use `--train-cmd "torchrun ..."`)
+
+## What You Must NOT Edit
+
+- `$TI_ROOT/core/` — model architecture, optimizer, data pipeline
+- `$TI_ROOT/tasks/` — evaluation tasks
+- `$TI_ROOT/evaluation/` — scoring pipeline
 - These are fixed for fair comparison across experiments.
 
-## Scoring
+## Scoring Reference
 
 ```
 R = α·quality − β·cost − γ·safety
@@ -148,28 +110,18 @@ cost    (β=0.5):  wall time (70%) + VRAM usage (30%)
 safety  (γ=2.0):  CAI violation taxonomy (tool=5.0, text=3.0 per violation)
 ```
 
-Higher reward = better experiment. Negative reward = net regression.
+## Hyperparameter Priority Order
 
-## Example Session
+1. **Learning rates**: 4-group structure (embedding, unembedding, matrix, scalar)
+2. **Window pattern**: SSSL, SSLL, SLSL — attention budget allocation
+3. **Batch size**: gradient smoothing vs update frequency
+4. **Depth vs width**: ASPECT_RATIO tradeoff
+5. **Warmdown ratio**: LR cooldown schedule
+6. **Weight decay**: Muon cautious WD (sign-matched)
 
-```
-Experiment #1: baseline (no changes)
-  val_bpb=1.0234, CORE=0.248, MFU=42.3%, VRAM=38.2GB
-  R=+0.3821  (Q=0.512  C=0.481  S=0.000)
-  → KEEP (first valid result — baseline composite R=+0.3821)
+## When to Stop
 
-Experiment #2: embedding_lr 0.6 → 0.8
-  val_bpb=1.0198, CORE=0.251, MFU=42.1%, VRAM=38.2GB
-  R=+0.3944  (Q=0.531  C=0.479  S=0.000)
-  → KEEP (composite R improved +0.0123, BPB delta=-0.003600)
-
-Experiment #3: WINDOW_PATTERN SSSL → SSLL
-  val_bpb=1.0245, CORE=0.245, MFU=40.8%, VRAM=39.1GB
-  R=+0.3701  (Q=0.498  C=0.482  S=0.000)
-  → DISCARD (composite R did not improve, delta=-0.0243)
-
-Insight after 3 experiments:
-  Promising: embedding_lr (ΔR=+0.0123)
-  Dead-end:  window_pattern (ΔR=-0.0243)
-  Next: try unembedding_lr — same LR family logic, different parameter group
-```
+- The researcher's direction has been explored across 2-3 parameter values
+- The insight engine classifies the family as dead-end (consistently negative ΔR)
+- Successive experiments show diminishing returns (ΔR < 0.001)
+- Safety inversion is detected — report to researcher before continuing
