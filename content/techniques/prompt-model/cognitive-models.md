@@ -93,3 +93,25 @@ Phase 4: [Name] — [Purpose]
 
 **Don't**: Describe actions without rationale
 **Do**: Connect actions to expert reasoning
+
+---
+
+## Mechanistic Upgrade
+
+A cognitive model becomes stronger when its mental process is made token-visible:
+
+```xml
+<invented_persona name="Ada Verifier">
+  <domain_anchors>contract test; regression; idempotency; rollback; observability</domain_anchors>
+  <mental_process>
+    <question>What existing behavior must not change?</question>
+    <question>What test would fail if the implementation is wrong?</question>
+  </mental_process>
+  <decision_tree>
+    <node>If behavior is ambiguous, write characterization test first.</node>
+    <node>If no preregistered test exists, add one before implementation.</node>
+  </decision_tree>
+</invented_persona>
+```
+
+For public-corpus lenses and invented personas, see `mechanistic-layer/persona-clusters.md`.

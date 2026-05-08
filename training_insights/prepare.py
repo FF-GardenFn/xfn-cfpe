@@ -1,12 +1,13 @@
 """
-One-time data preparation for autoresearch experiments.
+One-time data preparation for training-insights experiments.
 Downloads data shards and trains a BPE tokenizer.
 
 Usage:
     python prepare.py                  # full prep (download + tokenizer)
     python prepare.py --num-shards 8   # download only 8 shards (for testing)
 
-Data and tokenizer are stored in ~/.cache/autoresearch/.
+Data and tokenizer are cached locally; the legacy ~/.cache/autoresearch/
+path is preserved for backward compatibility with existing data caches.
 """
 
 import os
@@ -368,7 +369,7 @@ def evaluate_bpb(model, tokenizer, batch_size):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Prepare data and tokenizer for autoresearch")
+    parser = argparse.ArgumentParser(description="Prepare data and tokenizer for training-insights")
     parser.add_argument("--num-shards", type=int, default=10, help="Number of training shards to download (-1 = all). Val shard is always pinned.")
     parser.add_argument("--download-workers", type=int, default=8, help="Number of parallel download workers")
     args = parser.parse_args()

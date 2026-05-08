@@ -38,9 +38,22 @@ Prompts don't instruct LLMs—they warp probability distributions in latent spac
 | `prompt-architecture.md` | Main prompt vs Skills, gravity wells |
 | `generation-strategies.md` | How to create prompt variants |
 | `validation-rubric.md` | How to validate generated prompts |
+| `mechanistic-layer/` | Tokenizer-aware, training-aware, attention-aware prompt design |
 
 ---
 
 ## Key Principle
 
 "Claude is already very smart." Only add context Claude doesn't have. Challenge each piece with: Does Claude really need this explanation?
+
+## Deeper Layer: Mechanistic Prompt Design
+
+The design foundation now has a second layer beneath cognitive structure:
+
+```
+cognitive model
+  -> structural phases/gates
+  -> mechanistic token/order/reference/lens design
+```
+
+Use `mechanistic-layer/OVERVIEW.md` when prompt quality depends on domain terms, tokenizer behavior, context order, public-corpus personas, references, screenshots, or preregistered tests.

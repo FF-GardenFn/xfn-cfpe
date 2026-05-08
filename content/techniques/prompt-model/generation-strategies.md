@@ -60,6 +60,21 @@ Base: Crux taxonomy (empirical, value, definitional)
 Alt: Crux taxonomy (factual, normative, conceptual, procedural)
 ```
 
+### Strategy 5: Mechanistic Variant
+
+Change token/order/reference mechanics while preserving task intent.
+
+```
+Base: generic role + broad instructions
+       ↓ Mechanistic Variant
+V1: domain anchors + glossary
+V2: named lens + decision tree
+V3: source pack + preregistered tests
+V4: randomized option order
+```
+
+**Hypothesis format**: "Changing [token/order/lens/source] will affect [specificity/grounding/order-invariance/test pass rate] by [expected change]"
+
 ---
 
 ## Test Case Strategies
@@ -114,6 +129,19 @@ Dialectica bypasses (should get direct answers):
 - Comprehension: "Summarize this argument" (even if philosophical)
 ```
 
+### Strategy 5: Mechanistic Stress
+
+Cases that test whether output changes for non-semantic reasons.
+
+```
+Patterns:
+- Option-order flip: Same options, reversed order
+- Middle burial: Critical fact placed in the middle of long context
+- Lexicon ambiguity: "token", "margin", "model", or "agent" without disambiguation
+- Persona ablation: Generic role vs named lens vs decision tree
+- Reference ablation: Same task with and without source pack
+```
+
 ---
 
 ## Output Formats
@@ -152,3 +180,4 @@ Every generated item must pass:
 2. **Mode consistency**: Dialectic signals match expected mode
 3. **Uniqueness**: Similarity < 0.85 to existing items
 4. **Clarity**: No ambiguous pronouns without referents
+5. **Mechanistic stability**: Non-semantic order changes should not flip the answer

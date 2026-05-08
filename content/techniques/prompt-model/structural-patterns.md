@@ -113,6 +113,23 @@ Structure embodies the mental process of the domain expert, not just lists of ac
 
 ---
 
+## Mechanistic Extension: Token-Aware Structure
+
+The six principles define the cognitive scaffold. The mechanistic layer defines how that scaffold appears to the model as tokens.
+
+Add these checks when the prompt is technical, long-context, high-stakes, or ambiguous:
+
+- Domain anchors appear before analysis
+- Load-bearing terms are defined once and reused exactly
+- Critical constraints are placed near the beginning and repeated near the end
+- Options are order-neutralized or randomized
+- Real-person lenses are operationalized into decision trees before use
+- References, screenshots, logs, and tests have explicit source IDs
+
+Details: `mechanistic-layer/validation-and-integration.md`.
+
+---
+
 ## Validation Rubric (Target: 60/60)
 
 | Principle | Criteria | Points |

@@ -1,0 +1,9 @@
+{
+  "name": "prompt-model",
+  "description": "Mechanistic-aware prompt engineering plugin. Translates raw user intent into expert-level prompt instructions optimized for execution by another LLM, by orchestrating tokenizer-aware lexicon construction, persona operationalization, position discipline, formatting-as-signal, negative-space subtraction, evidence scaffolding, and a composite quality rubric.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Faycal Farhat",
+    "email": "faycal.farhat@mail.mcgill.ca"
+  }
+}

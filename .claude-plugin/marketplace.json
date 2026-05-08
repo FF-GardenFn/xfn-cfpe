@@ -20,6 +20,19 @@
       "license": "MIT",
       "keywords": ["training", "evaluation", "checkpoint", "hyperparameter", "autonomous", "composite-reward"],
       "category": "research"
+    },
+    {
+      "name": "prompt-model",
+      "source": "./plugins/prompt-model",
+      "description": "Mechanistic-aware prompt engineering — slash command /write-prompt translates raw user intent into expert-level prompt instructions for execution by another LLM, by orchestrating tokenizer-aware lexicon, persona operationalization, position discipline, formatting-as-signal, negative-space subtraction, evidence scaffolding, and a composite quality rubric",
+      "version": "0.1.0",
+      "author": {
+        "name": "Faycal Farhat"
+      },
+      "repository": "https://github.com/FF-GardenFn/XFN-CFPE",
+      "license": "MIT",
+      "keywords": ["prompt-engineering", "mechanistic-prompting", "tokenizer-aware", "lexicon", "persona-cluster", "composite-rubric", "prism"],
+      "category": "tooling"
     }
   ]
 }

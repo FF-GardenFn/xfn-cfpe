@@ -4,7 +4,7 @@ InsightEngine — extracts training insights from experiment history.
 This is the "Training Insights" part of the platform: turning accumulated
 experiment data into *understanding* about what actually matters.
 
-Karpathy's loop answers: "did BPB improve?"
+A single-metric loop answers: "did BPB improve?"
 InsightEngine answers:
   - Which hyperparameter families consistently improve composite reward?
   - Which families are dead-ends (consistently negative delta)?

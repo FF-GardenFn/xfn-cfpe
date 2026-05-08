@@ -37,7 +37,7 @@ The reasoning is written by the agent or researcher after each experiment.
 ```markdown
 ## Session: [date] — [tag]
 
-Branch: autoresearch/[tag]
+Branch: ti/[tag]
 Platform: [GPU type, count]
 Starting BPB: [baseline val_bpb]
 Starting R:   [baseline composite reward]
@@ -49,7 +49,7 @@ Starting R:   [baseline composite reward]
 
 ### Session: 2026-03-10 — mar10
 
-Branch: `autoresearch/mar10`
+Branch: `ti/mar10`
 Platform: 1× H100 80GB
 Starting BPB: 1.023400 (baseline)
 Starting R:   +0.3821

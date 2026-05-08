@@ -8,12 +8,12 @@ Autonomous LLM training experiment platform with multi-dimensional checkpoint ev
 
 ## The Problem with Single-Metric Training Loops
 
-Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) proved that an AI agent can run 100+ training experiments per night, unattended, and autonomously improve a model. The loop is elegant: propose a hyperparameter change → train → check val_bpb → keep if lower → repeat.
+A typical autonomous training loop is elegant: propose a hyperparameter change → train → check `val_bpb` → keep if lower → repeat. The agent runs 100+ experiments per night and the model improves.
 
-But val_bpb as the sole arbiter has a structural flaw. It can miss:
+But `val_bpb` as the sole arbiter has a structural flaw. It can miss:
 
 - A checkpoint that improved loss **but doubled VRAM** usage (the change isn't worth the cost)
-- A checkpoint that improved loss **but introduced safety regressions** (the capability inversion problem — found in the Constitutional Kernel experiment: +1.6pp violation rate on Sonnet despite apparent alignment improvement)
+- A checkpoint that improved loss **but introduced safety regressions** (the capability inversion problem — found in the Constitutional Kernel experiment: +1.1pp violation rate on Sonnet under CAI alone, post-correction)
 - A checkpoint that improved loss **but degraded reasoning quality** (memorisation vs. derivation)
 - A checkpoint that improved loss by a tiny margin **not worth the architectural complexity added**
 
@@ -86,28 +86,30 @@ Experiment #4: batch_size 512 → 1024
              [cost penalty: VRAM 71.4GB → cost score 0.891, up from 0.479]
 ```
 
-This is the insight Karpathy's loop misses: the BPB improved, but the experiment consumed nearly the entire VRAM budget. Not worth keeping.
+This is the insight a single-metric loop misses: the BPB improved, but the experiment consumed nearly the entire VRAM budget. Not worth keeping.
 
 ---
 
 ## Components
 
-| Directory | What | Origin |
-|-----------|------|--------|
-| `core/` | Model, optimizer, data pipeline, inference engine | Karpathy |
-| `scripts/` | Training loops (pretrain, SFT, RL, eval, tokenizer) | Karpathy |
-| `tasks/` | Evaluation tasks (MMLU, GSM8K, ARC, HumanEval) | Karpathy |
-| `quick_train.py` | Single-GPU 5-min trainer | Karpathy |
-| `prepare.py` | Data download, tokenizer, BPB evaluation | Karpathy |
-| `evaluation/checkpoint_eval.py` | Composite reward + decision gates | Farhat |
-| `evaluation/parser.py` | stdout → TrainingMetrics (crash detection) | Farhat |
-| `evaluation/runner.py` | Closed loop: train → evaluate → log → git | Farhat |
-| `evaluation/insights.py` | Experiment history → InsightReport | Farhat |
-| `evaluation/report.py` | Unified markdown artifact per experiment | Farhat |
-| `evaluation/behavioral_delta.py` | RL-O-CoV process rewards (Goldilocks zone) | Farhat |
-| `commands/experiment.md` | Claude Code `/experiment` skill | Farhat |
-| `tests/` | 80 tests for evaluation pipeline | Farhat |
-| `__main__.py` | `ti` CLI (run / analyze / status / report) | Farhat |
+| Directory | What |
+|-----------|------|
+| `core/` | Model, optimizer, data pipeline, inference engine |
+| `scripts/` | Training loops (pretrain, SFT, RL, eval, tokenizer) |
+| `tasks/` | Evaluation tasks (MMLU, GSM8K, ARC, HumanEval) |
+| `quick_train.py` | Single-GPU 5-min trainer |
+| `prepare.py` | Data download, tokenizer, BPB evaluation |
+| `evaluation/checkpoint_eval.py` | Composite reward + decision gates |
+| `evaluation/parser.py` | stdout → TrainingMetrics (crash detection) |
+| `evaluation/runner.py` | Closed loop: train → evaluate → log → git |
+| `evaluation/insights.py` | Experiment history → InsightReport |
+| `evaluation/report.py` | Unified markdown artifact per experiment |
+| `evaluation/behavioral_delta.py` | RL-O-CoV process rewards (Goldilocks zone) |
+| `commands/experiment.md` | Claude Code `/experiment` skill |
+| `tests/` | 80 tests for evaluation pipeline |
+| `__main__.py` | `ti` CLI (run / analyze / status / report) |
+| `train_gpt.py` | Source-of-truth monolith; sections progressively integrated into `core/` |
+| `dev/train_gpt_inventory.md` | Section-by-section extraction map |
 
 ---
 
@@ -163,6 +165,21 @@ The insight engine feeds this context directly into the next hypothesis, closing
 
 ---
 
+## Optimizer
+
+`core/optim.py` provides `MuonAdamW` (single GPU) and `DistMuonAdamW` (multi-GPU, ZeRO-2 style). Muon (MomentUm Orthogonalized by Newton-Schulz) handles 2D matrix params; AdamW handles embeddings, heads, and scalars.
+
+The Muon implementation supports:
+- **Five variants**: `standard4`, `standard5`, `polar_express5`, `turbo4_aol`, `custom` — selectable via `build_muon_orthogonalizer_config(...)`.
+- **Two backends**: Newton-Schulz polynomial (`standard_ns`) and stabilized Gram-Newton-Schulz with restart (`stabilized_gram_ns`).
+- **AOL (Absolute-Off-the-wall)** diagonal equilibration on the column Gram, optional per variant.
+- **fp32 buffers** throughout the distributed path to eliminate cross-rank bf16 rounding divergence.
+- **`clip_grad_norm_no_sync_`** utility for device-local gradient clipping without host sync.
+
+The Muon system was extracted from the `train_gpt.py` monolith on 2026-05-06; further sections (HYDRA architecture, bigram/trigram priors, QAT/INT4 quantization, scaling schedules, validation utilities) are documented in `dev/train_gpt_inventory.md` for progressive integration.
+
+---
+
 ## Process Rewards (RL-O-CoV)
 
 Beyond loss and benchmarks, Training Insights measures **representational change** between checkpoints using hidden-state cosine similarity at a diagnostic layer.
@@ -209,13 +226,5 @@ safety  (γ=2.0):  tool violations × 5.0  +  text violations × 3.0
 Safety veto threshold: 0.5
 (= one tool violation per 10 probes)
 ```
-
----
-
-## Attribution
-
-The training engine (`core/`, `scripts/`, `tasks/`, `quick_train.py`, `program.md`) is by **Andrej Karpathy** — from [autoresearch](https://github.com/karpathy/autoresearch) and [nanochat](https://github.com/karpathy/nanochat). Licensed under MIT.
-
-The evaluation pipeline (`evaluation/`, `commands/`, `__main__.py`) and integration with the ARENA scoring framework, RL-O-CoV process rewards, and Constitutional AI safety taxonomy is by **Faycal Farhat**.
-
-Thank you, Andrej, for making frontier training infrastructure open and hackable. This project exists because you showed that the full stack — tokenization through RL — can be understood, modified, and improved by anyone with a GPU and curiosity.
+# TODO: consider wether this section should stay here or could be moved in root readme.md 
+The CAI experiment (`/CAI/`) provides the violation taxonomy, the intent-aware classifier that distinguishes refusals from compliance (correcting a 19.7% false-positive rate in the original v4 scoring), and the post-correction headline numbers: 0/760 tool-based violations under any kernel condition, residual rates of 2.6% (Opus) and 2.1% (Sonnet) under dual-surface governance. 

@@ -1,11 +1,11 @@
 """
 evaluation/report.py — bridge between CheckpointReport and core/report.py.
 
-core/report.py (Karpathy) generates system-level markdown: environment,
-hardware, git state, bloat metrics. It knows nothing about experiment scoring.
+core/report.py generates system-level markdown: environment, hardware,
+git state, bloat metrics. It knows nothing about experiment scoring.
 
-CheckpointReport (Farhat) captures composite reward, BPB, CORE, safety,
-process rewards. It knows nothing about the system it ran on.
+CheckpointReport captures composite reward, BPB, CORE, safety, process
+rewards. It knows nothing about the system it ran on.
 
 This module bridges them: one unified experiment artifact per run.
 

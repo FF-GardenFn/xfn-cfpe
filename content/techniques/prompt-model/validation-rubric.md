@@ -17,6 +17,8 @@ How to assess the quality of generated prompts and test cases.
 
 **Target**: 60/60 for production-ready prompts.
 
+For technical, long-context, high-stakes, or strategy prompts, also run the mechanistic rubric in `mechanistic-layer/validation-and-integration.md`.
+
 ---
 
 ## Prompt Quality Dimensions
@@ -137,3 +139,12 @@ For each dimension, assign 0-10:
 - [ ] Unique (sim < 0.85)
 - [ ] Clear, unambiguous
 - [ ] Has expected_mode tag
+
+**For Mechanistic Layer**:
+- [ ] Target model/tokenizer or proxy identified
+- [ ] Domain anchors and glossary included
+- [ ] Critical constraints positioned head/tail
+- [ ] References include source IDs and use cases
+- [ ] Persona/lens operationalized into criteria or decision tree
+- [ ] Coding tasks include preregistered tests
+- [ ] Option order tested or neutralized

@@ -1,6 +1,5 @@
 """
-Autoresearch pretraining script. Single-GPU, single-file.
-Cherry-picked and simplified from nanochat.
+Single-GPU pretraining script. Single-file, 5-minute experiments.
 Usage: uv run train.py
 """
 

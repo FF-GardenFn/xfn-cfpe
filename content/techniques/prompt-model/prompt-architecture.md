@@ -56,6 +56,30 @@ Why fusion works:
 
 ---
 
+## Mechanistic Layer: Tokens + Position + Evidence
+
+The gravity well is built from token sequences, not abstract intent.
+
+```
+prompt text
+  -> tokenizer
+  -> token embeddings + position
+  -> attention/MLP computation
+  -> next-token distribution
+```
+
+Architectural prompts should therefore specify:
+
+- Domain anchors: canonical field terms that pull the model into the right neighborhood
+- Position: task and constraints at the head, output contract and tests at the tail
+- References: papers, docs, screenshots, logs, and test commands that ground claims
+- Lenses: named or invented personas operationalized into decision trees
+- Evals: preregistered tests or falsifiers that decide whether the output worked
+
+See `mechanistic-layer/OVERVIEW.md` for the deeper tokenizer-aware layer.
+
+---
+
 ## Main Prompt vs Skills Separation
 
 **Main Agent Prompt** (always active):

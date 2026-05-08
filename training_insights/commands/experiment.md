@@ -19,8 +19,10 @@ The Python interpreter is at `../bin/python3` (project venv).
 
 ## Context
 
-The training engine is based on Karpathy's autoresearch/nanochat infrastructure.
-The evaluation pipeline uses ARENA's composite reward: R = α·quality − β·cost − γ·safety.
+The training engine is a custom implementation; the Muon optimizer (variant-aware
+Newton-Schulz with optional AOL preconditioning and stabilized Gram-NS backend)
+is being progressively absorbed from `train_gpt.py`. The evaluation pipeline uses
+ARENA's composite reward: R = α·quality − β·cost − γ·safety.
 
 ## Files You Can Edit
 

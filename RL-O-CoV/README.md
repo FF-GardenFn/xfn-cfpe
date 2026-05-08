@@ -40,6 +40,7 @@ This is **prompt engineering meeting training pipelines**:
 |-------|----------------|---------|
 | Prompt | [DIALECTICA](../content/prompts/dialectica/dialectica_v0.3.7.md) | Structure reasoning at inference |
 | Theory | [O-CoV](../content/techniques/CoV/CoV.md) | Bidirectional verification framework |
+| Prompt Mechanics | [Mechanistic Prompt Layer](../content/techniques/prompt-model/mechanistic-layer/OVERVIEW.md) | Tokenizer-aware anchors, order, references, lenses, and preregistered tests |
 | Training | RL-O-CoV (this) | Bake the structure into weights |
 
 The Goldilocks Zone (0.15 < similarity < 0.85) measures whether hypothesis and oscillation are **related but different**—genuine dialectic tension, not echo chamber or incoherence.

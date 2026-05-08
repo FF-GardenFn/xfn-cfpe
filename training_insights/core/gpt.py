@@ -1,5 +1,6 @@
 """
-GPT model (rewrite, a lot simpler)
+GPT model.
+
 Notable features:
 - rotary embeddings (and no positional embeddings)
 - QK norm
@@ -10,6 +11,12 @@ Notable features:
 - no bias in linear layers
 - Group-Query Attention (GQA) support for more efficient inference
 - Flash Attention 3 integration
+- Per-layer learnable resid_lambdas / x0_lambdas for residual scaling
+- Value embeddings on alternating layers (ResFormer-style)
+- Optional DualBlock: span-pooled attention path alongside per-token attention,
+  inspired by the local/global split in `train_gpt.py`. Opt-in via
+  `GPTConfig.block_kind = "dual"`. Zero-initialized span path means a dual-block
+  GPT starts identical to single-block and diverges only as it trains.
 """
 
 from functools import partial
@@ -37,6 +44,19 @@ class GPTConfig:
     # Characters: L=long (full context), S=short (half context)
     # Examples: "L"=all full context, "SL"=alternating, "SSL"=two short then one long
     window_pattern: str = "SSSL"
+    # Block architecture: "single" = standard transformer block,
+    # "dual" = HYDRA-inspired dual-path block adding a span-pooled attention path
+    # alongside token-level attention. The span path captures long-range dependencies
+    # at O(N) cost; the token path remains the primary learning signal.
+    # Span path is zero-initialized so a dual-block GPT starts behaviorally identical
+    # to a single-block GPT and diverges only as it trains.
+    block_kind: str = "single"
+    # Span size for the dual block's pooled-attention path. Sequence length must be
+    # divisible by span_size when block_kind="dual".
+    span_size: int = 32
+    # Number of heads for the span-pooled attention. Independent of n_head; typically
+    # smaller (span attention is over fewer positions, so fewer heads suffice).
+    n_span_head: int = 4
 
 
 def norm(x):
@@ -137,7 +157,73 @@ class MLP(nn.Module):
         return x
 
 
+class SpanPoolAttention(nn.Module):
+    """Causal self-attention over span-pooled summaries.
+
+    Inspired by the local/global split in `train_gpt.py` (HydraGlobalSelfAttention):
+    the local path attends per-token at high resolution; this span path attends at
+    lower resolution over chunk-pooled summaries, capturing long-range dependencies
+    at O((N/span)^2) cost instead of O(N^2). The pooled output is broadcast back to
+    per-token granularity for residual injection.
+
+    Causal masking is preserved at span granularity: span s attends to spans 0..s
+    (a span attending to its own pool includes information from its tokens, which
+    is acceptable since the pool is derived from already-emitted tokens at training
+    time; for autoregressive inference, the span path is bypassed when a kv_cache
+    is active because the cache only sees one new token at a time).
+    """
+
+    def __init__(self, n_embd, n_head, span_size):
+        super().__init__()
+        assert n_embd % n_head == 0, "n_embd must be divisible by n_span_head"
+        self.n_head = n_head
+        self.head_dim = n_embd // n_head
+        self.span_size = span_size
+        self.c_q = Linear(n_embd, n_embd, bias=False)
+        self.c_k = Linear(n_embd, n_embd, bias=False)
+        self.c_v = Linear(n_embd, n_embd, bias=False)
+        self.c_proj = Linear(n_embd, n_embd, bias=False)
+
+    def forward(self, x):
+        # Skip the span path during kv-cache inference: the cache feeds a single
+        # token at a time, so chunk-pooling is meaningless and the per-token
+        # attention path carries the full inference signal.
+        B, T, C = x.size()
+        if T < self.span_size:
+            return torch.zeros_like(x)
+        if T % self.span_size != 0:
+            # Pad-then-trim path skipped: dual-block requires T % span_size == 0.
+            # Surface the error early at training time rather than producing
+            # silently-wrong span boundaries.
+            raise ValueError(
+                f"DualBlock span attention requires sequence length {T} to be "
+                f"divisible by span_size {self.span_size}"
+            )
+
+        n_spans = T // self.span_size
+        # Pool to span summaries: mean over each chunk. Mean is cheaper than learned
+        # pooling and keeps the parameter count constant w.r.t. span_size.
+        x_spans = x.view(B, n_spans, self.span_size, C).mean(dim=2)  # (B, n_spans, C)
+
+        # Standard causal attention over span summaries.
+        q = self.c_q(x_spans).view(B, n_spans, self.n_head, self.head_dim).transpose(1, 2)
+        k = self.c_k(x_spans).view(B, n_spans, self.n_head, self.head_dim).transpose(1, 2)
+        v = self.c_v(x_spans).view(B, n_spans, self.n_head, self.head_dim).transpose(1, 2)
+        q, k = norm(q), norm(k)
+        y = F.scaled_dot_product_attention(q, k, v, is_causal=True)  # (B, H, n_spans, D)
+        y = y.transpose(1, 2).contiguous().view(B, n_spans, C)
+        y = self.c_proj(y)  # (B, n_spans, C)
+
+        # Broadcast back to per-token: each token in span s sees the span's summary.
+        # Using repeat_interleave preserves causal structure (token t in span s sees
+        # spans 0..s, which only summarize tokens that precede or coincide with t's
+        # span — never later spans).
+        return y.repeat_interleave(self.span_size, dim=1)  # (B, T, C)
+
+
 class Block(nn.Module):
+    """Standard single-stream transformer block: token attention + MLP."""
+
     def __init__(self, config, layer_idx):
         super().__init__()
         self.attn = CausalSelfAttention(config, layer_idx)
@@ -146,6 +232,56 @@ class Block(nn.Module):
     def forward(self, x, ve, cos_sin, window_size, kv_cache):
         x = x + self.attn(norm(x), ve, cos_sin, window_size, kv_cache)
         x = x + self.mlp(norm(x))
+        return x
+
+
+class DualBlock(nn.Module):
+    """Dual-path transformer block: token attention + span-pooled attention + MLP.
+
+    Inspired by HydraLocalBlock / HydraGlobalBlock in `train_gpt.py`, but adapted to
+    a single-stream trunk: rather than maintaining two parallel stacks (local at full
+    resolution, global at pooled resolution), this block runs both attention regimes
+    in parallel within each layer and combines them into a single residual stream.
+
+    Forward:
+        x = x + attn_scale * token_attn(norm(x))
+              + span_scale  * span_attn(norm(x))
+        x = x + mlp_scale  * mlp(norm(x))
+
+    The `span_scale` parameter and the `c_proj` of the span attention are zero-
+    initialized in `GPT.init_weights`, so a freshly-initialized dual-block GPT is
+    behaviorally identical to a single-block GPT. The span path activates only as
+    training drives `span_scale` away from zero.
+
+    Inference behavior: when a kv_cache is active (single-token inference), the
+    span path is skipped — it's a span-level operation that has no meaningful
+    single-token semantics. The token path carries inference unchanged.
+    """
+
+    def __init__(self, config, layer_idx):
+        super().__init__()
+        self.attn = CausalSelfAttention(config, layer_idx)
+        self.span_attn = SpanPoolAttention(
+            n_embd=config.n_embd,
+            n_head=config.n_span_head,
+            span_size=config.span_size,
+        )
+        self.mlp = MLP(config)
+        # Per-path learnable scales (initialized in init_weights). Dim-vector scales
+        # match HydraLocalBlock's design so each channel can be modulated independently.
+        self.attn_scale = nn.Parameter(torch.ones(config.n_embd))
+        self.span_scale = nn.Parameter(torch.zeros(config.n_embd))  # zero-init: dormant at start
+        self.mlp_scale = nn.Parameter(torch.ones(config.n_embd))
+
+    def forward(self, x, ve, cos_sin, window_size, kv_cache):
+        x_norm = norm(x)
+        attn_out = self.attn(x_norm, ve, cos_sin, window_size, kv_cache)
+        x = x + self.attn_scale.to(dtype=x.dtype) * attn_out
+        if kv_cache is None:
+            # Span path active only during training / full-sequence eval.
+            span_out = self.span_attn(x_norm)
+            x = x + self.span_scale.to(dtype=x.dtype) * span_out
+        x = x + self.mlp_scale.to(dtype=x.dtype) * self.mlp(norm(x))
         return x
 
 
@@ -166,9 +302,23 @@ class GPT(nn.Module):
         padded_vocab_size = ((config.vocab_size + pad_vocab_size_to - 1) // pad_vocab_size_to) * pad_vocab_size_to
         if padded_vocab_size != config.vocab_size:
             print0(f"Padding vocab_size from {config.vocab_size} to {padded_vocab_size} for efficiency")
+        # Block class is selected by config: "single" (default) keeps the standard
+        # per-token transformer block; "dual" augments each layer with a span-pooled
+        # attention path inspired by HYDRA's local/global split.
+        block_kind = getattr(config, "block_kind", "single").lower()
+        if block_kind == "single":
+            block_cls = Block
+        elif block_kind == "dual":
+            block_cls = DualBlock
+            assert config.sequence_len % config.span_size == 0, (
+                f"DualBlock requires sequence_len ({config.sequence_len}) divisible "
+                f"by span_size ({config.span_size})"
+            )
+        else:
+            raise ValueError(f"Unknown block_kind={block_kind!r}; expected 'single' or 'dual'")
         self.transformer = nn.ModuleDict({
             "wte": nn.Embedding(padded_vocab_size, config.n_embd),
-            "h": nn.ModuleList([Block(config, layer_idx) for layer_idx in range(config.n_layer)]),
+            "h": nn.ModuleList([block_cls(config, layer_idx) for layer_idx in range(config.n_layer)]),
         })
         self.lm_head = Linear(config.n_embd, padded_vocab_size, bias=False)
         # Per-layer learnable scalars (inspired by modded-nanogpt)
@@ -221,6 +371,18 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(block.attn.c_proj.weight) # projections are zero
             torch.nn.init.uniform_(block.mlp.c_fc.weight, -s, s)
             torch.nn.init.zeros_(block.mlp.c_proj.weight)
+            # DualBlock-only initialization: span-attention QKV use the same uniform
+            # init as the token path; the projection and per-path scales are zero-
+            # initialized so the dual block starts behaviorally identical to a single
+            # block. This makes single→dual a strict capability superset at init.
+            if isinstance(block, DualBlock):
+                torch.nn.init.uniform_(block.span_attn.c_q.weight, -s, s)
+                torch.nn.init.uniform_(block.span_attn.c_k.weight, -s, s)
+                torch.nn.init.uniform_(block.span_attn.c_v.weight, -s, s)
+                torch.nn.init.zeros_(block.span_attn.c_proj.weight)
+                block.attn_scale.data.fill_(1.0)
+                block.span_scale.data.zero_()  # dormant at init
+                block.mlp_scale.data.fill_(1.0)
 
         # Per-layer scalars
         self.resid_lambdas.fill_(1.0)   # 1.0 => typical residual connections at init

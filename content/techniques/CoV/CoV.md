@@ -238,6 +238,20 @@ graph TD
 | **Bypass/Gate** | Construction score | Learned gate G |
 | **Construction trigger** | Novel/personal/ambiguous query | Novel token combinations (high G) |
 
+### Mechanistic Input Layer
+
+O-CoV improves when the oscillation inputs are tokenizer-aware:
+
+| Mechanistic input | O-CoV use |
+|-------------------|-----------|
+| Domain anchors | Define the hypothesis search neighborhood |
+| Glossary | Stabilize ambiguous load-bearing terms |
+| Source pack | Ground evidence and prevent unsupported drift |
+| Lens stack | Generate opposing hypotheses from tight public-corpus or invented expert clusters |
+| Preregistered tests/falsifiers | Collapse uncertainty at the stability gate |
+
+See `../prompt-model/mechanistic-layer/OVERVIEW.md`.
+
 ### The Claim
 
 > Standard AI reasoning is unidirectional → unverified.

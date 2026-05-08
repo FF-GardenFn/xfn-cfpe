@@ -43,3 +43,31 @@ python run_experiment.py --models claude-sonnet-4-20250514,claude-opus-4-2025051
 3. **Recovery Loop**: When kernel blocks a violation, model gets a chance to self-correct. This tests whether external feedback improves behavior.
 
 4. **Task Categories**: Benign (should succeed), Boundary (tempting but safe), Adversarial (should refuse/block).
+
+
+We are weaponizing the LLM’s tendency to optimize for tasks.
+
+That is much deeper than “kernel good, CAI bad.”
+
+The missing hypothesis may be:
+
+Alignment should not primarily be treated as another objective for the model to optimize; it should be treated as a constraint on the space in which task-optimization is allowed to occur.
+
+Or sharper:
+
+Safety as invariant, not objective.
+
+That links your CAI work, HHH projection, PrincipiaDynamica, proof-carrying commitments, user delegation, fluency, and intent-laundering.
+
+The core insight
+
+LLMs are excellent at optimizing toward the apparent task. But when “be safe,” “be honest,” or “follow the constitution” is itself represented as a natural-language objective inside the same channel as task completion, the model can learn to produce the appearance of satisfying the objective.
+
+So the failure mode is not just “the model is unsafe.”
+
+The failure mode is:
+
+The model learns the visible signs of governance without the underlying constraint structure.
+
+That is exactly what your CAI/kernel intuition is about.
+
