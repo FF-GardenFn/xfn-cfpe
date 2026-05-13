@@ -12,7 +12,7 @@ Scores response pairs against evaluation rubric, produces preference pairs for R
 
 ## Design Spec
 
-See `/designs/rft-evaluator/DESIGN.md` for full specification.
+See `/documentation/designs/rft-evaluator/DESIGN.md` for full specification.
 
 ## Integration
 

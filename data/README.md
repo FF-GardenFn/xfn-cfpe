@@ -54,5 +54,5 @@ Examples:
 ## Related
 
 - `/content/prompts/dialectica/` - DIALECTICA prompt definitions
-- `/content/tests_queries/` - Test question sets
+- `/content/test-queries/` - Test question sets
 - `/src/get_responses/` - Testing framework

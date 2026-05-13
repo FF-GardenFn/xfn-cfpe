@@ -1,6 +1,6 @@
 # Prompt Maker Agent
 
-**Status**: Planned
+**Status**: wip UNDER  ./plugins/prompt-model
 
 Generates prompt variants for systematic A/B testing.
 
@@ -12,7 +12,7 @@ Generates prompt variants for systematic A/B testing.
 
 ## Design Spec
 
-See `/designs/template-writer/DESIGN.md` for full specification.
+See `/documentation/designs/template-writer/DESIGN.md` for full specification.
 
 ## Integration
 

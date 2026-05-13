@@ -8,11 +8,11 @@ Claude Code agents for automating the prompt engineering pipeline.
 
 | Agent | Purpose | Design Spec |
 |-------|---------|-------------|
-| **prompt-maker** | Generate prompt variants (ablations, compressions) | `/designs/template-writer/` |
-| **LLM-as-judge** | Score responses against rubric, produce preference pairs | `/designs/rft-evaluator/` |
+| **prompt-maker** | Generate prompt variants (ablations, compressions) | `/documentation/designs/template-writer/` |
+| **LLM-as-judge** | Score responses against rubric, produce preference pairs | `/documentation/designs/rft-evaluator/` |
 | **evaluator** | Run batch evaluations, compute aggregate metrics | `/evaluation/benchmarks/` |
 
-These agents will automate the loop described in `/designs/SYSTEM_OVERVIEW.md`:
+These agents will automate the loop described in `/documentation/designs/SYSTEM_OVERVIEW.md`:
 
 ```
 Template Writer → get_responses → RFT Evaluator → iterate

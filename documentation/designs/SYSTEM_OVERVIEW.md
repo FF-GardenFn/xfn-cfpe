@@ -117,7 +117,7 @@ XFN/
 │
 ├── content/
 │   ├── prompts/                # Prompt versions (DIALECTICA, XDRG)
-│   ├── tests_queries/          # Test cases
+│   ├── test-queries/           # Test cases
 │   └── techniques/             # Theoretical foundations (CoV)
 │
 ├── evaluation/
@@ -126,7 +126,8 @@ XFN/
 │
 ├── RL-O-CoV/                   # Reinforcement learning experiments
 │
-├── designs/                    # This documentation
+├── documentation/
+│   └── designs/                # This documentation
 │
 └── data/                       # Output artifacts
     ├── {model}/                # Model-specific results

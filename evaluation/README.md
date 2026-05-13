@@ -73,4 +73,4 @@ See `/src/get_responses/` for full framework.
 | `/src/ANALYZER/` | Sentiment data | Calibrate frustration coefficient in equ.md |
 | `/src/ARENA/` | Multi-turn evaluation | Measure escalation patterns |
 | `/data/analysis/` | Results | Error rate calibration |
-| `/designs/rft-evaluator/` | Design spec | Detailed rubric + preference pair format |
+| `/documentation/designs/rft-evaluator/` | Design spec | Detailed rubric + preference pair format |
