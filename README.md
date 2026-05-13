@@ -1,63 +1,73 @@
 # XFN-CFPE
 
-Infrastructure for systematic prompt engineering: hypothesis generation, cross-provider testing, and evaluation.
+XFN-CFPE is a research and evaluation workspace for testing how language-model behavior changes under different prompts, evaluation frames, training loops, and control mechanisms. The repo combines completed experiments, reusable execution infrastructure, prompt/theory artifacts, and forward research projects around model behavior, constitutional control, and cross-provider evaluation.
 
-## What This Is
+The core loop is simple: state a hypothesis about what should govern model behavior, implement the prompt or intervention, run it across models/providers, measure the result, and keep the artifacts inspectable enough to distinguish surface compliance from the mechanism that produced it.
 
-A closed-loop system for developing and validating prompt engineering techniques. Generate a hypothesis about what improves LLM reasoning, implement it as a prompt variant, test across providers, measure against rubric, iterate. The machinery handles execution and measurement; the engineer focuses on hypotheses and interpretation.
+## Main Surfaces
 
-## The Stack
+| Surface | Role | Status |
+|---------|------|--------|
+| **Research artifacts** | Completed and active experiments on constitutional control, provenance, intent laundering, and refusal/capability behavior | Active |
+| **Execution infrastructure** | Cross-provider prompting, response capture, multi-turn arena experiments, and planned analysis tools | Active |
+| **Prompt/theory substrate** | DIALECTICA, DIALECTICA-RIGOR, prompt-model notes, techniques, and test queries | Active |
+| **Training insights** | Standalone package for multi-dimensional checkpoint evaluation and training-loop diagnostics | WIP |
+| **Documentation/designs** | Architecture notes, evaluator specs, and template-generation specs | Supporting |
 
-| Layer | Artifact | Status |
-|-------|----------|--------|
-| **Prompt** | DIALECTICA v0.3.7 | Implemented |
-| **Evaluation** | 8-dimension rubric + Process-Confidence Coupling | Implemented |
-| **Training** | RL-O-CoV | Experimental |
+## Key Artifacts
 
-## Implementation Status
-
-| Component | Status | Notes                                      |
-|-----------|--------|--------------------------------------------|
-| DIALECTICA prompt | Done | v0.3.7 with bypass detection               |
-| DIALECTICA-RIGOR | Done | v0.4 anti-hallucination variant            |
-| Cross-provider testing | Done | 4 providers, 22 models                     |
-| Evaluation framework | Done | Process-Confidence Coupling                |
-| Benchmark datasets | Done | 6,222 examples (GPQA, MATH-500, HLE, etc.) |
-| RL-O-CoV training | Experimental | N/A                                        |
-| ANALYZER | Planned | TBD                                        |
-| ARENA | Planned | TBD                                        |
+| Area | Artifact | Notes |
+|------|----------|-------|
+| Constitutional control | [CAI/](./CAI/) | Constitutional kernel experiment and empirical anchor |
+| Control provenance | [project/control-provenance-eval/](./project/control-provenance-eval/) | Evaluation frame for identifying which layer supplied behavioral control |
+| Intent laundering | [project/intent_laundering/](./project/intent_laundering/) | Methodology and seed-example analysis for request-layer intent-laundering detection |
+| Refusal/capability geometry | [project/refusal-capability-entanglement/](./project/refusal-capability-entanglement/) | Activation-steering pilot on Llama-3.1-8B testing whether refusal direction is geometrically separable from capability |
+| Prompt reasoning | [content/prompts/dialectica/](./content/prompts/dialectica/) | DIALECTICA versions, including current `v0.3.7` |
+| Anti-hallucination prompting | [content/prompts/XDRG/](./content/prompts/XDRG/) | DIALECTICA-RIGOR variant |
+| Cross-provider execution | [src/get_responses/](./src/get_responses/) | Provider adapters, model catalogs, CLI, and response processing |
+| Multi-turn evaluation | [src/ARENA/](./src/ARENA/) | Debate/escalation runners and arena workflows |
+| Training diagnostics | [training_insights/](./training_insights/) | Composite reward, checkpoint evaluation, and experiment reporting |
 
 ## Directory Structure
 
-- **content/** - Prompts and theoretical foundations
-  - [prompts/dialectica/](./content/prompts/dialectica/) - DIALECTICA versions (v0.1 → v0.3.7)
-    - [dialectica_v0.3.7.md](./content/prompts/dialectica/dialectica_v0.3.7.md) - Current version
-  - [prompts/XDRG/](./content/prompts/XDRG/) - DIALECTICA-RIGOR anti-hallucination variant
-    - [dialectica-rigor-V0.4.md](./content/prompts/XDRG/dialectica-rigor-V0.4.md) - Current version
-  - [techniques/CoV/](./content/techniques/CoV/) - Oscillatory Chain of Verification theory
-- **src/** - Testing infrastructure
+- **project/** - Public research-project surfaces
+  - [control-provenance-eval/](./project/control-provenance-eval/) - Control-provenance benchmark and methodology
+  - [intent_laundering/](./project/intent_laundering/) - Intent-laundering examples, prompt, and pilot results
+  - [refusal-capability-entanglement/](./project/refusal-capability-entanglement/) - Activation-steering pilot: refusal-direction separability vs. capability
+- **CAI/** - Constitutional kernel experiment
+  - [README.md](./CAI/README.md) - Main experiment framing and results
+  - [analysis/](./CAI/analysis/), [classifier/](./CAI/classifier/), [experiment/](./CAI/experiment/), [kernel/](./CAI/kernel/) - Experiment components
+- **src/** - Shared execution and evaluation code
   - [get_responses/](./src/get_responses/) - Cross-provider execution engine
     - [providers/](./src/get_responses/providers/) - Anthropic, OpenAI, Google, xAI
-    - [catalogs/](./src/get_responses/catalogs/) - Model registry (22 models with pricing)
-  - [ANALYZER/](./src/ANALYZER/) - Sentiment classifier (planned)
-  - [ARENA/](./src/ARENA/) - Cross-provider debates (planned)
-- **evaluation/** - Measurement infrastructure
-  - [benchmarks/](./evaluation/benchmarks/) - Rubrics, methodologies, test cases
-    - [evaluation_framework.md](./evaluation/benchmarks/evaluation_framework.md) - 8-dimension scoring
-    - [equ.md](./evaluation/benchmarks/equ.md) - Cost equations
-  - [benchmark_data/](./evaluation/benchmark_data/) - Datasets (GPQA, MATH-500, MMLU, GSM8K, HLE)
-- **RL-O-CoV/** - Reinforcement learning experiments
-  - [README.md](./RL-O-CoV/README.md) - Approach and business case
-  - [RL_O_CoV_Training_V2.py](RL-O-CoV/RL_O_CoV_Training_V2.py) - Training script
-  - [RL_O_CoV_Training_V3.py](RL-O-CoV/RL_O_CoV_Training_V3.py) - Latest Training script
-- **data/** - Experimental results
+    - [catalogs/](./src/get_responses/catalogs/) - Model registry and pricing metadata
+  - [ARENA/](./src/ARENA/) - Multi-turn cross-provider debates and arena runners
+  - [ANALYZER/](./src/ANALYZER/) - Planned analysis layer
+- **training_insights/** - Standalone training/evaluation package
+  - [README.md](./training_insights/README.md) - Architecture and composite-reward framing
+  - [core/](./training_insights/core/), [evaluation/](./training_insights/evaluation/), [tasks/](./training_insights/tasks/), [tests/](./training_insights/tests/) - Package internals
+- **content/** - Prompt, theory, and query substrate
+  - [prompts/dialectica/](./content/prompts/dialectica/) - DIALECTICA versions
+  - [prompts/XDRG/](./content/prompts/XDRG/) - DIALECTICA-RIGOR anti-hallucination variant
+  - [techniques/CoV/](./content/techniques/CoV/) - Oscillatory Chain of Verification theory
+  - [test-queries/](./content/test-queries/) - Test question sets
+- **evaluation/** - Benchmark/rubric layer
+  - [benchmarks/](./evaluation/benchmarks/) - Rubrics, methodologies, test cases, and cost equations
+  - [benchmark_data/](./evaluation/benchmark_data/) - GPQA, MATH-500, MMLU, GSM8K, HLE, and related datasets
+- **data/** - Experimental outputs and analysis artifacts
   - [haiku/](./data/haiku/), [sonnet/](./data/sonnet/), [opus/](./data/opus/) - Per-model results
   - [analysis/](./data/analysis/) - Evaluation reports
-- **designs/** - System architecture
-  - [SYSTEM_OVERVIEW.md](./designs/SYSTEM_OVERVIEW.md) - Pipeline architecture
-  - [rft-evaluator/](./designs/rft-evaluator/) - Preference pair generation spec
-  - [template-writer/](./designs/template-writer/) - Prompt variant generation spec
-- **agents/** - Automation (planned)
+  - [arena_results/](./data/arena_results/) - ARENA output artifacts
+- **documentation/** - Supporting documentation and design specs
+  - [designs/SYSTEM_OVERVIEW.md](./documentation/designs/SYSTEM_OVERVIEW.md) - Pipeline architecture
+  - [designs/rft-evaluator/](./documentation/designs/rft-evaluator/) - Preference-pair generation spec
+  - [designs/template-writer/](./documentation/designs/template-writer/) - Prompt-variant generation spec
+- **plugins/** - Plugin/skill packaging surfaces
+  - [prompt-model/](./plugins/prompt-model/) - Prompt-model plugin materials
+  - [training-insights/](./plugins/training-insights/) - Training-insights plugin materials
+- **agents/** - Planned automation agents
   - [prompt-maker/](./agents/prompt-maker/) - Variant generation
   - [LLM-as-judge/](./agents/LLM-as-judge/) - Response scoring
   - [evaluator/](./agents/evaluator/) - Batch evaluation
+- **RL-O-CoV/** - Reinforcement-learning experiments
+- **commands/**, **scripts/**, **templates/** - Supporting command, script, and template materials
