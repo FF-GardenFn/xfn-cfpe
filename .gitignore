@@ -97,7 +97,8 @@ CACHEDIR.TAG
 dev_playground/
 .claude/ # for .ctxpack session management
 .archive/
-archive/ # ignore all archive directories recursively
+# Ignore all archive directories recursively
+archive/
 alchemy/
 agents/archive/
 agents/.archive/

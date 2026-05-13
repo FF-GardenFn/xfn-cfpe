@@ -1,0 +1,7 @@
+{
+  "created_utc": "2026-05-11T13:39:19.452252+00:00",
+  "experiment_version": "v0.3.5",
+  "run_id": "v0.3.5_full_20260511T133918Z",
+  "run_mode": "full",
+  "primary_goal": "Run a holistic v0.3.5 refusal/capability sweep: calibrate anti-refusal steering, exclude invalid collapse points, evaluate capability on all behaviorally valid full-run magnitudes, and export audit-ready rows for manual labeling."
+}

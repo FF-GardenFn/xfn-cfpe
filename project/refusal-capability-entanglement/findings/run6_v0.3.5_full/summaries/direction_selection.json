@@ -1,0 +1,24 @@
+{
+  "chosen_layer": 16,
+  "activation_sigma": 4.30298376083374,
+  "steering_sigma_source": "directional_projection_std",
+  "layer_selection_metric": "heldout_cohen_d",
+  "steering_sign": -1.0,
+  "h3_projection_null": false,
+  "best_projection_row": {
+    "layer": 16.0,
+    "activation_sigma": 4.30298376083374,
+    "feature_activation_sigma": 0.07713526487350464,
+    "directional_projection_sigma": 4.30298376083374,
+    "train_refusal_projection_mean": 3.146320104598999,
+    "train_compliance_projection_mean": -5.307749271392822,
+    "train_projection_gap": 8.454069137573242,
+    "train_relative_projection_gap": 2.0,
+    "train_cohen_d": 12.936375776627317,
+    "heldout_refusal_projection_mean": 2.385469436645508,
+    "heldout_compliance_projection_mean": -4.973598003387451,
+    "heldout_projection_gap": 7.359067440032959,
+    "heldout_relative_projection_gap": 2.000000129591743,
+    "heldout_cohen_d": 8.40906292852664
+  }
+}

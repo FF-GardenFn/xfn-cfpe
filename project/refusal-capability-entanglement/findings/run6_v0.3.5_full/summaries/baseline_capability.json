@@ -1,0 +1,26 @@
+{
+  "mean_accuracy": 0.7650000000000001,
+  "benchmarks": {
+    "mmlu": {
+      "accuracy": 0.68,
+      "n": 200,
+      "skipped": false
+    },
+    "arc_challenge": {
+      "accuracy": 0.81,
+      "n": 200,
+      "skipped": false
+    },
+    "gsm8k": {
+      "accuracy": 0.805,
+      "n": 200,
+      "skipped": false
+    }
+  },
+  "condition": "baseline",
+  "condition_id": "baseline_capability",
+  "condition_family": "baseline_capability",
+  "magnitude_sigma": null,
+  "scale": 0.0,
+  "layer": null
+}
