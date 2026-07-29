@@ -42,22 +42,21 @@ Hourly rate varies by user type and query complexity—a useful variable for mor
 | Claude-4.5-Sonnet | $3.00 | $15.00 | ~12x |
 | Opus | $5.00 | $25.00 | ~20x |
 
-If RL-O-CoV makes Haiku reliably reason → users stay on Haiku → Anthropic saves compute, users get intelligence at lower cost.
+If RL-O-CoV makes a small-tier model reliably reason → users stay on the cheap tier → the provider saves inference compute, users get intelligence at lower cost. The argument holds for any provider's model ladder.
 
 ---
 
-## TODO: Coefficient Calibration
+## Open: Coefficient Calibration
 
-To make these equations actionable, need to calibrate:
+The equations are actionable once five coefficients are calibrated. Current status:
 
-- [ ] **Frustration Coefficient**: Measure via user studies or proxy metrics (abandon rate, tone shift)
-- [ ] **User Time Value**: Task-dependent ($50/hr for developer debugging vs $200/hr for executive decision)
-- [ ] **Model Price Delta**: Already known from catalog (Haiku→Sonnet = $2.75 input delta)
-- [ ] **Error Rate**: Measure via `/data/analysis/` results (baseline vs DIALECTICA accuracy)
-- [ ] **Correction Cost**: Estimate from multi-turn data (turns to resolution × time per turn)
+- **Frustration Coefficient** — open; measurable via proxy metrics from multi-turn transcripts (abandon rate, tone shift)
+- **User Time Value** — open; task-dependent ($50/hr for developer debugging vs $200/hr for executive decision)
+- **Model Price Delta** — known from the model catalog (e.g., Haiku→Sonnet = $2.75 input delta)
+- **Error Rate** — measurable from `/data/analysis/` results (baseline vs DIALECTICA accuracy)
+- **Correction Cost** — estimable from multi-turn data (turns to resolution × time per turn)
 
- Use `/src/ANALYZER/` to collect user sentiment data that correlates with frustration or whatever tool anthropic has. 
- Use `/src/ARENA/` multi-turn framework to measure escalation patterns.
+Escalation patterns are measurable with the `/src/ARENA/` multi-turn framework.
 
 ---
 
@@ -66,6 +65,5 @@ To make these equations actionable, need to calibrate:
 | File | Purpose |
 |------|---------|
 | `/src/get_responses/` | Cross-provider testing framework |
-| `/src/ANALYZER/` | Sentiment data for frustration proxy |
 | `/src/ARENA/` | Multi-turn evaluation for escalation patterns |
 | `/data/analysis/` | Experimental results for error rate calibration |

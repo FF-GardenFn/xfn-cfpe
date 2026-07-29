@@ -1,6 +1,6 @@
 # Cross-Provider LLM Testing Framework
 
-A unified evaluation framework for testing system prompts across multiple LLM providers. Supports Anthropic (Claude), OpenAI (GPT/o-series), Google (Gemini), and xAI (Grok) through a clean provider abstraction with extended thinking support, token tracking, and cost estimation. The framework enables A/B comparison between baseline and treatment prompts, with export to JSON/JSONL and XLSX formats.
+A unified evaluation framework for testing system prompts across multiple LLM providers. Supports Anthropic (Claude), OpenAI (GPT/o-series), Google (Gemini), and xAI (Grok) through a clean provider abstraction with extended thinking support, token tracking, and cost estimation. The framework enables A/B comparison between baseline and treatment prompts, with export to JSON/JSONL formats.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ python -m get_responses.cli batch --queries dialectica_tests --prompts baseline,
 providers/     # LLM provider implementations (anthropic, openai, google, xai)
 catalogs/      # Model registry (22 models) with pricing and capabilities
 models/        # Pydantic request/response schemas
-storage/       # Export handlers (JSON, JSONL, XLSX)
+storage/       # Export handlers (JSON, JSONL)
 ```
 
 ## Key Features

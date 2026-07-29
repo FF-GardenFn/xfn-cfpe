@@ -1,8 +1,10 @@
-# Training Insights (WIP)
+# Training Insights
 
 Autonomous LLM training experiment platform with multi-dimensional checkpoint evaluation.
 
 **The training engine measures what the model learned. The evaluation pipeline measures *how* the model learns.**
+
+**Provenance:** the base training scaffold (GPT model, tokenizer, dataloader, task harness) derives from Karpathy's [nanochat](https://github.com/karpathy/nanochat) — see `LICENSE`; upstream TODOs in `core/` and `scripts/` are kept as-is. The checkpoint-evaluation platform, composite reward, insight engine, and the extended optimizer/quantization/streaming modules are this repo's work on top of that scaffold.
 
 ---
 
