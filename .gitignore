@@ -36,7 +36,6 @@ logs/
 log/
 outputs/
 output/
-results/
 result.md
 *.log
 .tmp/
@@ -47,6 +46,7 @@ Thumbs.db
 # --- Secrets and environment files ---
 .env
 .env.*
+!.env.example
 .envrc
 *.secret
 *.secrets
@@ -80,11 +80,7 @@ evaluation/benchmark_data/hle/
 Anthropic-XFN-OPUS4.5-Dialectica-GH-FF.xlsx
 
 # --- OS-specific ---
-.DS_Store
 Icon?
-
-
-.idea/
 
 # --- Local environment / runtime artifacts ---
 # Ignore accidentally committed local env/build artifacts
@@ -95,7 +91,8 @@ share/
 pyvenv.cfg
 CACHEDIR.TAG
 dev_playground/
-.claude/ # for .ctxpack session management
+# local Claude Code config and session notes
+.claude/
 .archive/
 # Ignore all archive directories recursively
 archive/
