@@ -9,7 +9,7 @@ The core loop is simple: state a hypothesis about what should govern model behav
 | Surface | Role | Status |
 |---------|------|--------|
 | **Research artifacts** | Completed and active experiments on constitutional control, provenance, intent laundering, and refusal/capability behavior | Active |
-| **Execution infrastructure** | Cross-provider prompting, response capture, multi-turn arena experiments, and planned analysis tools | Active |
+| **Execution infrastructure** | Cross-provider prompting, response capture, and multi-turn arena experiments | Active |
 | **Prompt/theory substrate** | DIALECTICA, DIALECTICA-RIGOR, prompt-model notes, techniques, and test queries | Active |
 | **Training insights** | Standalone package for multi-dimensional checkpoint evaluation and training-loop diagnostics | WIP |
 | **Documentation/designs** | Architecture notes, evaluator specs, and template-generation specs | Supporting |
@@ -42,7 +42,6 @@ The core loop is simple: state a hypothesis about what should govern model behav
     - [providers/](./src/get_responses/providers/) - Anthropic, OpenAI, Google, xAI
     - [catalogs/](./src/get_responses/catalogs/) - Model registry and pricing metadata
   - [ARENA/](./src/ARENA/) - Multi-turn cross-provider debates and arena runners
-  - [ANALYZER/](./src/ANALYZER/) - Planned analysis layer
 - **training_insights/** - Standalone training/evaluation package
   - [README.md](./training_insights/README.md) - Architecture and composite-reward framing
   - [core/](./training_insights/core/), [evaluation/](./training_insights/evaluation/), [tasks/](./training_insights/tasks/), [tests/](./training_insights/tests/) - Package internals
@@ -65,9 +64,5 @@ The core loop is simple: state a hypothesis about what should govern model behav
 - **plugins/** - Plugin/skill packaging surfaces
   - [prompt-model/](./plugins/prompt-model/) - Prompt-model plugin materials
   - [training-insights/](./plugins/training-insights/) - Training-insights plugin materials
-- **agents/** - Planned automation agents
-  - [prompt-maker/](./agents/prompt-maker/) - Variant generation
-  - [LLM-as-judge/](./agents/LLM-as-judge/) - Response scoring
-  - [evaluator/](./agents/evaluator/) - Batch evaluation
+- **agents/** - Pipeline-automation agent designs and their implementation status ([agents/README.md](./agents/README.md))
 - **RL-O-CoV/** - Reinforcement-learning experiments
-- **commands/**, **scripts/**, **templates/** - Supporting command, script, and template materials
