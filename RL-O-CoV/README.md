@@ -4,7 +4,7 @@
 
 Haiku reasons perfectly—and concludes wrong.
 
-Look at [`/data/haiku4.5-gammam-d.json`](../data/haiku4.5-gammam-d.json) or [`/data/haiku4.5-lin.gravity-d.json`](../data/haiku4.5-lin.gravity-d.json). The model:
+Look at [`/data/haiku/dialectica/haiku4.5-gammam-d.json`](../data/haiku/dialectica/haiku4.5-gammam-d.json) or [`/data/haiku/dialectica/haiku4.5-lin.gravity-d.json`](../data/haiku/dialectica/haiku4.5-lin.gravity-d.json). The model:
 - Defines terms correctly (Clifford algebra, gamma matrices, antisymmetrized products)
 - Structures reasoning properly (phases, hypotheses, verification)
 - Uses appropriate vocabulary throughout
@@ -20,9 +20,11 @@ If I don't know the answer to a physics problem, I can't generate all the correc
 
 But that's exactly what Haiku does. The tokens are RIGHT. The chain is BROKEN.
 
+The diagnosis: the knowledge exists in the weights; the *execution policy* over that knowledge is what's broken. That framing—and the experiment designed around it—is written up in [`exp_proposal.md`](./exp_proposal.md) (2026-01-25), which remains the origin document for this line of work.
+
 ## The Approach
 
-**Turn that stupidity into a feature.**
+**Turn that failure mode into a training signal.**
 
 If the model already has the right tokens in its weights, the problem isn't knowledge—it's the execution of reasoning. So instead of prompting for structure, **train for it**.
 
@@ -57,23 +59,18 @@ Total Cost = (Tokens × Price)
            + (Error Rate × Correction Cost)
 ```
 
-**The economics:**
-- Haiku ($0.25/$1.25) is ~12x cheaper than Claude-4.5-Sonnet ($3/$15), ~20x cheaper than Opus ($5/$25)
-- But users escalate to expensive models when Haiku fails on reasoning tasks
-- If RL-O-CoV makes Haiku reliably reason → users stay on Haiku → Anthropic saves compute, users get intelligence at lower cost
+**The economics:** small-tier models (e.g., Haiku at $0.25/$1.25 per 1M tokens) are 12–20x cheaper than frontier tiers, but users escalate to expensive models the moment the cheap tier fails on reasoning. If RL-O-CoV makes a small model reliably execute its reasoning, users stay on the cheap tier: the provider saves inference compute, users get intelligence at lower cost. This holds for any provider's model ladder.
 
-Everyone wins.
+## Version History
 
-## Files
+| Version | Date | Key changes | Outcome |
+|---------|------|-------------|---------|
+| V1 (`time_to_put_the_pump_on_claude_v0.0.1.py`) | 2026-01 | Original prototype: LoRA rank 128, LR 3e-5, GSM8K only | **88% → 0% accuracy in 200 steps** — catastrophic forgetting |
+| V2 (`RL_O_CoV_Training_V2.py`) | 2026-02 | Conservative hyperparameters (LoRA 32, LR 5e-6, 4-bit, 100-step warmup), harder data mix, wider Goldilocks zone [0.15, 0.85], better similarity logging | Stable training; baseline preserved |
+| V3 (`RL_O_CoV_Training_V3.py` / `.ipynb`) | 2026-02-21 | Iteration on V2 | A later audit found label/comparator errors and reward-judge contamination — fixed in V4 |
+| V4 (`RL_O_CoV_Training_V4.py` / `.ipynb`) | 2026-06-13 | Frozen, adapter-disabled reward judge with centered hidden-state geometry; corrected hard-label ground truth + stricter math-equivalence checks; shaped resonance rewards over H1/H2 distinctness and oscillation engagement; K-sample group baselines; deterministic LoRA dropout; true LR warmup; greedy eval with no contamination of training reward statistics | Launched on Colab A100 (Qwen2-7B-Instruct, 4-bit, layer-14 analysis; initial eval on the 800 easy + 200 hard mix: 28% accuracy, 100% structure rate). Full-run artifacts not yet archived |
 
-| File | Purpose |
-|------|---------|
-| `RL_O_CoV_Training_V2.py` | Training script (conservative hyperparams, learned from V1 failure) |
-| `time_to_put_the_pump_on_claude_v0.0.1.py` | Original prototype |
-
-## V2 Changes (Learned from Catastrophic Failure)
-
-V1 went from 88% → 0% accuracy in 200 steps. V2 fixes:
+The V1 → V2 lesson table, for the record:
 
 | Parameter | V1 | V2 | Reason |
 |-----------|----|----|--------|
@@ -85,7 +82,7 @@ V1 went from 88% → 0% accuracy in 200 steps. V2 fixes:
 
 ## Status
 
-Experimental. V2 ready for evaluation on Colab A100. V1 archived (caused catastrophic forgetting).
+**V4 is the current implementation.** It was launched on a Colab A100 on 2026-06-13; the archived log covers configuration, initial evaluation, and early training steps — the full run's final metrics were not preserved, so a complete V4 run (with checkpointing to persistent storage this time) is the next step. V1 is archived (catastrophic forgetting). V2/V3 are kept for lineage.
 
 ---
 
