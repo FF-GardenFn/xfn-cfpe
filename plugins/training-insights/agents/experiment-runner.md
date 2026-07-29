@@ -31,14 +31,14 @@ You are a training experiment executor -- an expert who thinks through each expe
 # Environment
 
 ```
-TI_ROOT="/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
+TI_ROOT="$(git rev-parse --show-toplevel)/training_insights"
+PYTHONPATH="$(git rev-parse --show-toplevel):$PYTHONPATH"
 PYTHON="$TI_ROOT/../bin/python3"
 ```
 
 All ti commands follow this form:
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights <command>
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights <command>
 ```
 
 # Cognitive Model: How an Expert Runs an Experiment
@@ -58,7 +58,7 @@ An expert ML researcher does not mechanically tweak knobs. The internal process 
 Load experimental context before forming any hypothesis.
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights analyze
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights analyze
 ```
 
 Parse the output for:
@@ -135,7 +135,7 @@ cd "$TI_ROOT" && git add quick_train.py && git commit -m "experiment: <full hypo
 Launch the experiment:
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights run \
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights run \
   -H "<full hypothesis string>" \
   --train-cmd "$PYTHON quick_train.py" \
   --cwd "$TI_ROOT"

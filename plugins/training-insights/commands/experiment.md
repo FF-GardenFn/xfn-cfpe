@@ -17,14 +17,14 @@ This is not discipline. This is architecture. Every phase has a gate. No gate pa
 ## Environment
 
 ```bash
-export TI_ROOT="/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-export PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
+export TI_ROOT="$(git rev-parse --show-toplevel)/training_insights"
+export PYTHONPATH="$(git rev-parse --show-toplevel):$PYTHONPATH"
 export PYTHON="$TI_ROOT/../bin/python3"
 ```
 
 All `ti` commands:
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights <command>
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights <command>
 ```
 
 Training:
@@ -43,7 +43,7 @@ Five sequential phases. Each produces an artifact. Each has a gate that blocks f
 Read the insight engine's analysis. Read the current config. Understand what has been tried, what worked, what failed, and what the engine recommends.
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights analyze
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights analyze
 ```
 
 This produces:
@@ -107,7 +107,7 @@ cd "$TI_ROOT" && git add quick_train.py && git commit -m "experiment: <hypothesi
 Run the full experiment pipeline:
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights run \
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights run \
   -H "<hypothesis string>" \
   --train-cmd "$PYTHON quick_train.py" \
   --cwd "$TI_ROOT"
@@ -146,7 +146,7 @@ Record the deltaR, the reason string, and whether the family verdict changed (ne
 Re-run the insight analysis to see the updated landscape:
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights analyze
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights analyze
 ```
 
 Evaluate:

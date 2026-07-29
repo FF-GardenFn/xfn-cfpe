@@ -19,7 +19,7 @@ This is **not** a prompt-improver. It is a domain-expertise injector. The user l
 The orchestration logic lives in:
 
 ```
-/Users/hyperexploiter/PycharmProjects/XFN-CFPE /plugins/prompt-model/skills/prompt-engineering/SKILL.md
+plugins/prompt-model/skills/prompt-engineering/SKILL.md
 ```
 
 Read it now. Apply the two-phase model defined there.
@@ -29,13 +29,13 @@ Read it now. Apply the two-phase model defined there.
 All technique files referenced by the SKILL.md live under:
 
 ```
-/Users/hyperexploiter/PycharmProjects/XFN-CFPE /content/techniques/prompt-model/
+content/techniques/prompt-model/
 ```
 
 When the SKILL.md says "consult `mechanistic-layer/preconditions-catalog.md`", that resolves to:
 
 ```
-/Users/hyperexploiter/PycharmProjects/XFN-CFPE /content/techniques/prompt-model/mechanistic-layer/preconditions-catalog.md
+content/techniques/prompt-model/mechanistic-layer/preconditions-catalog.md
 ```
 
 ## Execution contract

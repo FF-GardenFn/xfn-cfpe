@@ -11,8 +11,8 @@ Python imports from the evaluation pipeline, ensure PYTHONPATH includes the
 project root:
 
 ```bash
-export PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
-cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
+export PYTHONPATH="$(git rev-parse --show-toplevel):$PYTHONPATH"
+cd "$(git rev-parse --show-toplevel)/training_insights"
 ```
 
 The Python interpreter is at `../bin/python3` (project venv).
@@ -45,8 +45,8 @@ For each experiment:
 1. **Read results history + extract insights**: Before proposing anything, run the
    insight engine to understand what has worked and what hasn't:
    ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-   PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " ../bin/python3 -c "
+   cd "$(git rev-parse --show-toplevel)/training_insights"
+   PYTHONPATH="$(git rev-parse --show-toplevel)" ../bin/python3 -c "
    from training_insights.evaluation.insights import InsightEngine
    from pathlib import Path
    engine = InsightEngine(results_file=Path('results.tsv'), json_dir=Path('runs'))
@@ -77,19 +77,19 @@ For each experiment:
 
 5. **Run training**:
    ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
+   cd "$(git rev-parse --show-toplevel)/training_insights"
    ../bin/python3 quick_train.py 2>&1 | tee run.log
    ```
    Or multi-GPU:
    ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
+   cd "$(git rev-parse --show-toplevel)/training_insights"
    torchrun --nproc_per_node=8 scripts/base_train.py --depth 8
    ```
 
 6. **Parse + Evaluate**: Use the runner to parse stdout and compute composite reward:
    ```bash
-   cd "/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-   PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " ../bin/python3 -c "
+   cd "$(git rev-parse --show-toplevel)/training_insights"
+   PYTHONPATH="$(git rev-parse --show-toplevel)" ../bin/python3 -c "
    from training_insights.evaluation.runner import ExperimentRunner
    from pathlib import Path
    runner = ExperimentRunner(

@@ -11,15 +11,15 @@ Show the current state of all training experiments and provide structured interp
 ## Environment
 
 ```bash
-export TI_ROOT="/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-export PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
+export TI_ROOT="$(git rev-parse --show-toplevel)/training_insights"
+export PYTHONPATH="$(git rev-parse --show-toplevel):$PYTHONPATH"
 export PYTHON="$TI_ROOT/../bin/python3"
 ```
 
 ## Run
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights status
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights status
 ```
 
 ## Interpretation Gates

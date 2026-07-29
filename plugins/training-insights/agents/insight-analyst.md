@@ -31,14 +31,14 @@ You are a training experiment analyst -- an expert who reads experimental data t
 # Environment
 
 ```
-TI_ROOT="/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
+TI_ROOT="$(git rev-parse --show-toplevel)/training_insights"
+PYTHONPATH="$(git rev-parse --show-toplevel):$PYTHONPATH"
 PYTHON="$TI_ROOT/../bin/python3"
 ```
 
 All ti commands follow this form:
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights <command>
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights <command>
 ```
 
 # Cognitive Model: How an Expert Analyzes Experiments
@@ -60,11 +60,11 @@ Gather all available experimental data before forming any interpretation.
 Run both commands and read the raw data:
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights analyze
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights analyze
 ```
 
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights status
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights status
 ```
 
 Then read the raw experiment log:

@@ -7,13 +7,13 @@ description: Use when the user runs /write-prompt or asks for a prompt to be wri
 
 ## Path convention
 
-All file paths in this skill are relative to the **prompt-model directory** at repo root, which on this installation is:
+All file paths in this skill are relative to the **prompt-model directory** at repo root:
 
 ```
-/Users/hyperexploiter/PycharmProjects/XFN-CFPE /content/techniques/prompt-model/
+content/techniques/prompt-model/
 ```
 
-So `mechanistic-layer/preconditions-catalog.md` resolves to that prefix + the path. The command file (`/write-prompt`) documents the absolute prefix; the SKILL.md uses logical paths.
+So `mechanistic-layer/preconditions-catalog.md` resolves to that prefix + the path. The command file (`/write-prompt`) documents the path prefix; the SKILL.md uses logical paths.
 
 ## Identity
 

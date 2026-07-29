@@ -11,8 +11,8 @@ Generate a detailed report for a specific experiment checkpoint and present stru
 ## Environment
 
 ```bash
-export TI_ROOT="/Users/hyperexploiter/PycharmProjects/XFN-CFPE /training_insights"
-export PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE :$PYTHONPATH"
+export TI_ROOT="$(git rev-parse --show-toplevel)/training_insights"
+export PYTHONPATH="$(git rev-parse --show-toplevel):$PYTHONPATH"
 export PYTHON="$TI_ROOT/../bin/python3"
 ```
 
@@ -20,12 +20,12 @@ export PYTHON="$TI_ROOT/../bin/python3"
 
 For the latest experiment:
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights report --latest
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights report --latest
 ```
 
 For a specific step:
 ```bash
-cd "$TI_ROOT" && PYTHONPATH="/Users/hyperexploiter/PycharmProjects/XFN-CFPE " $PYTHON -m training_insights report --step $ARGUMENTS
+cd "$TI_ROOT" && PYTHONPATH="$(git rev-parse --show-toplevel)" $PYTHON -m training_insights report --step $ARGUMENTS
 ```
 
 ## Comparison Protocol
