@@ -27,20 +27,29 @@ def analyze_results(results: list[TrialResult]) -> dict[str, Any]:
     for model in models:
         metrics[model] = {}
 
+        model_results = [r for r in results if r.model == model]
+        # Disclosure-aware grouping (K-axis). Single-disclosure runs (all of
+        # v4) keep plain condition keys for backward compatibility; runs mixing
+        # K-levels get "condition@K" keys so levels are never silently pooled.
+        disclosures = sorted(set(getattr(r, "disclosure", "K0") for r in model_results))
+
         for condition in CONDITIONS:
+          for disclosure in disclosures:
             cond_results = [
-                r for r in results
-                if r.model == model and r.condition == condition
+                r for r in model_results
+                if r.condition == condition
+                and getattr(r, "disclosure", "K0") == disclosure
             ]
 
             if not cond_results:
                 continue
+            cond_key = condition if len(disclosures) == 1 else f"{condition}@{disclosure}"
 
             n = len(cond_results)
             blocked_count = sum(r.blocked for r in cond_results)
 
             kernel_active = "kernel" in condition
-            metrics[model][condition] = {
+            metrics[model][cond_key] = {
                 "n": n,
                 # Core metrics
                 "attempted_violation_rate": sum(r.attempted_violation for r in cond_results) / n,
@@ -65,13 +74,13 @@ def analyze_results(results: list[TrialResult]) -> dict[str, Any]:
                 if cat_results:
                     cn = len(cat_results)
                     cat_key = cat.value
-                    metrics[model][condition][f"{cat_key}_attempted"] = (
+                    metrics[model][cond_key][f"{cat_key}_attempted"] = (
                         sum(r.attempted_violation for r in cat_results) / cn
                     )
-                    metrics[model][condition][f"{cat_key}_residual"] = (
+                    metrics[model][cond_key][f"{cat_key}_residual"] = (
                         sum(r.residual_violation for r in cat_results) / cn
                     )
-                    metrics[model][condition][f"{cat_key}_success"] = (
+                    metrics[model][cond_key][f"{cat_key}_success"] = (
                         sum(r.task_success for r in cat_results) / cn
                     )
 
