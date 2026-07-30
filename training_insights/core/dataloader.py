@@ -13,7 +13,7 @@ there are fewer "confusing" tokens in the train/val batches as every token can
 now attend back to the BOS token and sees the full context of the document.
 
 Fallback to the original if you have very limited data AND long documents:
-https://github.com/karpathy/core/blob/3c3a3d7/core/dataloader.py#L78-L117
+https://github.com/karpathy/nanochat/blob/3c3a3d7/nanochat/dataloader.py#L78-L117
 """
 
 import torch
