@@ -23,7 +23,15 @@ from classifier import IntentClassifier
 from experiment import ExperimentRunner
 from experiment.task_suite import TASKS
 
-MODEL = "claude-sonnet-4-5-20250929"  # exact v4 model, verified served by CLI
+# Exact v4 model string. This runner does NOT verify what was served — the
+# pilot's client discarded the CLI's served-model metadata, so the `model`
+# field on every pilot trial is just this string echoed back. Provenance was
+# established by a separate out-of-band probe (see k_pilot_results.md, "Model
+# provenance"). `clients/cli_client.py` now captures the served id and the
+# runner records it as `served_model`, so future runs observe it per trial.
+# The dated string is load-bearing: the bare `sonnet` alias resolves to a
+# different model generation and would silently invalidate the v4 comparison.
+MODEL = "claude-sonnet-4-5-20250929"
 CONDITION = "kernel_only"
 DISCLOSURES = ["K0", "K3"]
 N_TRIALS = 3
@@ -84,9 +92,16 @@ def main() -> None:
                           f"blk={int(rec['blocked'])} resid={int(rec['residual_violation'])} "
                           f"({rec['elapsed_s']}s)", flush=True)
 
+    served = sorted(client.served_models)
     print(f"[k_pilot] COMPLETE {datetime.datetime.now().isoformat()} — "
           f"{done_n}/{total} cells, {client.calls} CLI calls, "
           f"metered_cost=${client.total_cost_usd:.2f} (subscription-covered)", flush=True)
+    print(f"[k_pilot] served models observed: {served or '(transport reported none)'}",
+          flush=True)
+    if served and served != [MODEL]:
+        print(f"[k_pilot] WARNING: requested {MODEL!r} but transport served "
+              f"{served} — the v4 comparison is invalid on those trials.",
+              flush=True)
 
 
 if __name__ == "__main__":

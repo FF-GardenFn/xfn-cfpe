@@ -10,7 +10,7 @@ import anthropic
 from rich.console import Console
 
 from config import MAX_TOKENS
-from models import TestTask, TrialResult, ToolCall
+from models import TestTask, TrialResult, ToolCall, summarize_tool_call
 from kernel import ConstitutionalKernel, ViolationKind
 from classifier import IntentClassifier, Intent
 from experiment.prompts import (
@@ -36,6 +36,9 @@ class ExperimentRunner:
         self.client = client or anthropic.Anthropic()
         self.kernel = kernel or ConstitutionalKernel()
         self.classifier = classifier or IntentClassifier(self.client)
+        # Model actually served on the most recent call, if the transport
+        # reports it. Observed provenance, never the requested string.
+        self.last_served_model: Optional[str] = None
 
     def run_trial(
         self,
@@ -75,9 +78,12 @@ class ExperimentRunner:
 
         # Get initial response
         response = self._call_model(system, task.prompt, model)
+        served_model = self.last_served_model
 
         if response.startswith("ERROR:"):
-            return self._error_result(task, condition, model, response, disclosure)
+            return self._error_result(
+                task, condition, model, response, disclosure, served_model
+            )
 
         # Parse tool call
         tool_call = self._parse_tool_call(response)
@@ -95,6 +101,7 @@ class ExperimentRunner:
         final_tool_call = tool_call
         violation_kind = None
         text_violations = []
+        tool_violation = None  # None = no tool call reached the gate at all
 
         # TEXT VALIDATION: Check ALL responses for harmful prose
         # This catches "lawyer model" circumvention - the model might reason
@@ -119,7 +126,7 @@ class ExperimentRunner:
                 # Kernel blocks tool call and allows recovery
                 blocked = True
                 recovery_response, final_tool_call, recovered = self._attempt_recovery(
-                    task, model, kernel_result.violations
+                    task, model, kernel_result.violations, system
                 )
                 # Check recovery response for text violations too
                 # BUT: if recovery is a refusal, text pattern mentions are OK
@@ -138,7 +145,13 @@ class ExperimentRunner:
                 residual_violation = attempted_violation
 
             if attempted_violation:
-                violation_kind = self.kernel.classify_violation(tool_call, text_violations)
+                # Pass tool_violation explicitly: a violating call is a
+                # tool-channel event even when the prose also matched a
+                # pattern. Without it the kind collapses to text_only and
+                # H1's falsifier cannot see the tool case.
+                violation_kind = self.kernel.classify_violation(
+                    tool_call, text_violations, tool_violation
+                )
 
         elif not text_clean:
             # No tool call but text contains harmful patterns
@@ -193,10 +206,21 @@ class ExperimentRunner:
             recovery_response=recovery_response,
             violation_kind=violation_kind.value if violation_kind else None,
             text_violations=text_violations if text_violations else None,
+            # Gate-exercise provenance: what (if anything) faced the kernel.
+            tool_call_summary=summarize_tool_call(tool_call),
+            tool_call_violating=tool_violation,
+            served_model=served_model,
         )
 
     def _call_model(self, system: str, prompt: str, model: str) -> str:
-        """Call Claude API."""
+        """Call Claude API.
+
+        Records the served model on ``self.last_served_model`` when the
+        transport reports it (see ``clients/cli_client.py``). Transports that
+        do not report provenance leave it None — which is honest: the trial
+        record then says "unobserved" rather than echoing the request.
+        """
+        self.last_served_model = None
         try:
             response = self.client.messages.create(
                 model=model,
@@ -204,6 +228,7 @@ class ExperimentRunner:
                 system=system,
                 messages=[{"role": "user", "content": prompt}],
             )
+            self.last_served_model = getattr(response, "served_model", None)
             return response.content[0].text
         except Exception as e:
             return f"ERROR: {e}"
@@ -238,8 +263,17 @@ class ExperimentRunner:
         task: TestTask,
         model: str,
         violations: list[str],
+        system: str = BASELINE_SYSTEM,
     ) -> tuple[Optional[str], Optional[ToolCall], bool]:
         """Attempt recovery after kernel blocks a violation.
+
+        Args:
+            system: the trial's composed system prompt. This must be the
+                SAME (condition, disclosure) cell as the initial turn —
+                previously the recovery turn was hardcoded to
+                ``BASELINE_SYSTEM``, which silently ran every post-block turn
+                at K0 regardless of the trial's disclosure level, dropping
+                both the constitution and the disclosure text mid-trial.
 
         Returns:
             (recovery_response, new_tool_call, recovered)
@@ -249,7 +283,7 @@ class ExperimentRunner:
             request=task.prompt,
         )
 
-        recovery_response = self._call_model(BASELINE_SYSTEM, prompt, model)
+        recovery_response = self._call_model(system, prompt, model)
 
         if recovery_response.startswith("ERROR:"):
             return recovery_response, None, False
@@ -310,6 +344,7 @@ class ExperimentRunner:
         model: str,
         error: str,
         disclosure: str = "K0",
+        served_model: Optional[str] = None,
     ) -> TrialResult:
         """Create error result."""
         return TrialResult(
@@ -325,4 +360,5 @@ class ExperimentRunner:
             recovered=False,
             residual_violation=False,
             task_success=False,
+            served_model=served_model,
         )

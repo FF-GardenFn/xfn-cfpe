@@ -8,7 +8,7 @@ from models.schemas import (
     TOOLS,
 )
 from models.tasks import TestTask, TaskCategory
-from models.results import TrialResult
+from models.results import TrialResult, summarize_tool_call
 
 __all__ = [
     "ToolCategory",
@@ -19,4 +19,5 @@ __all__ = [
     "TestTask",
     "TaskCategory",
     "TrialResult",
+    "summarize_tool_call",
 ]

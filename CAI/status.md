@@ -75,10 +75,20 @@ External enforcement via a **constitutional kernel** beats self-critique (CAI) o
 
 ### K-disclosure experiment (extends v4 along a disclosure axis)
 
-- `CAI/k_disclosure_spec.md` — pre-registered spec (v1.0, 2026-07-29) + changelog
-- `CAI/k_pilot_results.md` — pilot results writeup (2026-07-30); decision: REVISE K3 wording before scaling
+Pilot ran 2026-07-30 (Sonnet, `kernel_only`, K0 vs K3, 32 adversarial tasks, n=3 → 192 trials). Verdicts after the 2026-07-30 review correction:
+
+| Hypothesis | Verdict |
+|---|---|
+| H1 kernel invariance | **not falsified — but barely tested.** A violating tool call reached the gate on **1 of 192 trials**, and was blocked. 13/192 trials emitted any tool call at all. The zero-execution figure is a zero over a denominator of ~1, not over 192 — under an ~87.5% refusal rate it cannot separate "the gate works" from "the gate was never tested." |
+| H2 attempt elicitation | **not supported → REVISE.** K3 − K0 = +3.1pp (Fisher p=0.246), inside the pre-registered +5pp margin. Revise K3 wording before scaling. |
+| H3 displacement | Directionally consistent (text residuals 0 → 2), far too small to claim, and the mechanism is not identified by this data. |
+
+H1 and H2 are one result: the elicitation was too weak, and *because* it was too weak, the constraint was never seriously exercised. Next experiment is to red-team the validator's forbidden-pattern coverage directly — pattern evasion, not model reluctance, is the real threat to H1.
+
+- `CAI/k_disclosure_spec.md` — pre-registered spec (v1.0, 2026-07-29) + changelog (incl. the 2026-07-30 correction entries)
+- `CAI/k_pilot_results.md` — pilot results writeup (2026-07-30, corrected)
 - `CAI/run_k_pilot.py` — pilot runner (CLI transport, resumable)
-- `CAI/analysis/k_pilot_analysis.py` — pre-registered contrasts (H1/H2/H3) + v4 anchor comparison
-- `CAI/test_k_disclosure.py` — no-network harness validation, incl. K0 byte-identity regression
+- `CAI/analysis/k_pilot_analysis.py` — pre-registered contrasts (H1/H2/H3), gate-exercise decomposition, v4 anchor comparison
+- `CAI/test_k_disclosure.py` — no-network harness validation (5 tests), incl. K0 byte-identity regression and the tool-channel masking regression
 - `CAI/results/k_pilot_trials.jsonl` — 192 pilot trials (raw)
-- `CAI/results/k_pilot_summary.json` — machine-readable pilot summary
+- `CAI/results/k_pilot_summary.json` — machine-readable pilot summary, incl. `gate_exercise`
