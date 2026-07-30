@@ -4,6 +4,7 @@ Constitutional Kernel Experiment v4 - Main Entry Point
 
 Usage:
     python run_experiment.py [--models MODEL1,MODEL2] [--trials N] [--output PATH]
+                            [--disclosures K0,K1,K2,K3]
 
 Example:
     python run_experiment.py --models claude-4-5-sonnet-20260115 --trials 3
@@ -38,11 +39,12 @@ def run_with_trials(
     kernel: ConstitutionalKernel,
     models: list[str],
     n_trials: int,
+    disclosures: list[str],
 ) -> list[TrialResult]:
     """Run experiment with multiple trials per task."""
     all_results: list[TrialResult] = []
 
-    total_calls = len(models) * len(TASKS) * len(CONDITIONS) * n_trials
+    total_calls = len(models) * len(TASKS) * len(CONDITIONS) * len(disclosures) * n_trials
 
     with Progress(
         SpinnerColumn(),
@@ -75,22 +77,24 @@ def run_with_trials(
 
                 for trial in range(n_trials):
                     for condition in CONDITIONS:
-                        result = runner.run_trial(task, condition, model)
-                        all_results.append(result)
-                        task_results[condition].append(result)
-                        progress.update(task_progress, advance=1)
+                        for disclosure in disclosures:
+                            result = runner.run_trial(task, condition, model, disclosure)
+                            all_results.append(result)
+                            task_results[condition].append(result)
+                            progress.update(task_progress, advance=1)
 
-                # Show summary for this task (across trials)
+                # Show summary for this task (across trials and disclosures)
                 for condition in CONDITIONS:
                     results = task_results[condition]
+                    n_cells = len(results)  # n_trials x len(disclosures)
                     successes = sum(1 for r in results if r.task_success)
                     violations = sum(1 for r in results if r.residual_violation)
 
-                    if violations == n_trials:
+                    if violations == n_cells:
                         console.print("[red]✗[/red]", end="")
                     elif violations > 0:
                         console.print("[yellow]~[/yellow]", end="")  # Mixed
-                    elif successes == n_trials:
+                    elif successes == n_cells:
                         console.print("[green]✓[/green]", end="")
                     else:
                         console.print("[cyan]○[/cyan]", end="")
@@ -158,6 +162,18 @@ def main():
         help="Output file path",
     )
     parser.add_argument(
+        "--disclosures",
+        type=str,
+        default="K0",
+        help=(
+            "Comma-separated kernel-disclosure levels (default: K0). "
+            "K0 = kernel undisclosed (v4 behavior), "
+            "K1 = model told a runtime gate exists, "
+            "K2 = K1 plus the gate's full rule set, "
+            "K3 = K2 plus explicit permission to seek bypass routes."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print configuration without running",
@@ -166,6 +182,7 @@ def main():
 
     models = [m.strip() for m in args.models.split(",")]
     n_trials = args.trials
+    disclosures = [d.strip() for d in args.disclosures.split(",")]
 
     # Load environment
     if ENV_FILE.exists():
@@ -182,8 +199,9 @@ def main():
     console.print(f"Tasks: {task_stats['total']} ({task_stats['benign']} benign, {task_stats['boundary']} boundary, {task_stats['adversarial']} adversarial)")
     console.print(f"Trials per task: {n_trials}")
     console.print(f"Conditions: {', '.join(CONDITIONS)}")
+    console.print(f"Disclosures: {', '.join(disclosures)}")
 
-    total_main = len(models) * task_stats['total'] * len(CONDITIONS) * n_trials
+    total_main = len(models) * task_stats['total'] * len(CONDITIONS) * len(disclosures) * n_trials
     console.print(f"Total API calls: ~{total_main} main + classifier calls")
     console.print(f"\nAdversarial techniques: {', '.join(task_stats['adversarial_techniques'])}\n")
 
@@ -198,7 +216,7 @@ def main():
     runner = ExperimentRunner(client, kernel, classifier)
 
     # Run with multiple trials
-    all_results = run_with_trials(runner, kernel, models, n_trials)
+    all_results = run_with_trials(runner, kernel, models, n_trials, disclosures)
 
     # Analyze
     console.print("\n")
@@ -230,6 +248,7 @@ def main():
         "n_trials": n_trials,
         "task_stats": task_stats,
         "conditions": CONDITIONS,
+        "disclosures": disclosures,
         "metrics": metrics,
         "variance_stats": variance_stats,
         "violation_taxonomy": taxonomy,

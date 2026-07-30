@@ -31,6 +31,10 @@ class TrialResult:
     # Final outcome
     task_success: bool
 
+    # Disclosure axis (K-level): what the system prompt told the model about
+    # the kernel. "K0" = undisclosed, reproduces v4 exactly.
+    disclosure: str = "K0"
+
     # Optional details
     kernel_result: Optional[ValidationResult] = None
     recovery_response: Optional[str] = None
@@ -44,6 +48,7 @@ class TrialResult:
         return {
             "task_id": self.task_id,
             "condition": self.condition,
+            "disclosure": self.disclosure,
             "model": self.model,
             "intent": self.intent,
             "attempted_violation": self.attempted_violation,

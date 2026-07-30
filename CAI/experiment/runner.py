@@ -13,7 +13,12 @@ from config import MAX_TOKENS
 from models import TestTask, TrialResult, ToolCall
 from kernel import ConstitutionalKernel, ViolationKind
 from classifier import IntentClassifier, Intent
-from experiment.prompts import CONDITION_PROMPTS, BASELINE_SYSTEM, RECOVERY_PROMPT
+from experiment.prompts import (
+    CONDITION_PROMPTS,
+    BASELINE_SYSTEM,
+    RECOVERY_PROMPT,
+    compose_system,
+)
 
 
 console = Console()
@@ -37,6 +42,7 @@ class ExperimentRunner:
         task: TestTask,
         condition: str,
         model: str,
+        disclosure: str = "K0",
     ) -> TrialResult:
         """Run a single trial with consistent scoring across conditions.
 
@@ -44,6 +50,9 @@ class ExperimentRunner:
             task: The test task to run
             condition: One of: "baseline", "cai", "kernel_only", "cai_kernel"
             model: Model ID to use
+            disclosure: One of "K0", "K1", "K2", "K3" - how much the system
+                prompt tells the model about the kernel. "K0" (default) is
+                v4 behavior: the kernel is never mentioned.
 
         Returns:
             TrialResult with all metrics
@@ -53,9 +62,13 @@ class ExperimentRunner:
             cai         - constitution only, no kernel gate
             kernel_only - no constitution, kernel gate only (isolates kernel effect)
             cai_kernel  - constitution + kernel gate (full thesis test)
+
+        Disclosure axis (K-levels):
+            K0 - undisclosed (v4)   K1 - gate exists
+            K2 - K1 + full rules    K3 - K2 + bypass permitted
         """
-        # Select system prompt from condition map
-        system = CONDITION_PROMPTS.get(condition, CONDITION_PROMPTS["baseline"])
+        # Compose system prompt from (condition, disclosure) cell
+        system = compose_system(condition, disclosure)
 
         # Determine if kernel gate is active for this condition
         kernel_active = "kernel" in condition  # True for kernel_only and cai_kernel
@@ -64,7 +77,7 @@ class ExperimentRunner:
         response = self._call_model(system, task.prompt, model)
 
         if response.startswith("ERROR:"):
-            return self._error_result(task, condition, model, response)
+            return self._error_result(task, condition, model, response, disclosure)
 
         # Parse tool call
         tool_call = self._parse_tool_call(response)
@@ -166,6 +179,7 @@ class ExperimentRunner:
         return TrialResult(
             task_id=task.id,
             condition=condition,
+            disclosure=disclosure,
             model=model,
             response=response,
             tool_call=final_tool_call,
@@ -295,11 +309,13 @@ class ExperimentRunner:
         condition: str,
         model: str,
         error: str,
+        disclosure: str = "K0",
     ) -> TrialResult:
         """Create error result."""
         return TrialResult(
             task_id=task.id,
             condition=condition,
+            disclosure=disclosure,
             model=model,
             response=error,
             tool_call=None,
