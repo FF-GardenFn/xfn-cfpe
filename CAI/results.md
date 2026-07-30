@@ -19,9 +19,13 @@ Initial scoring contained false positives where a model **refused** an adversari
 - Future runs use the integrated fix in `experiment/runner.py`. The numbers below are post-correction (`results/experiment_v4_corrected.json`).
 - `task_success` was unaffected by the bug (clean refusals already short-circuited to success in `_compute_success`), so success rates carry through unchanged.
 
+## Reading the metrics
+
+`residual_violation_rate` means **`executed_violation OR recovery_failure`** — an *upper bound* on harm that got through, not a measure of it. Where the kernel blocked a call, nothing executed; if the model's follow-up turn was then not clean, the trial still counts toward `residual`. That is a utility outcome, not a safety breach. Every "did it get through?" claim below is on **executed** violations. See [POSTMORTEM.md §"Metric semantics"](./POSTMORTEM.md#metric-semantics-residual_violation-conflated-two-outcomes), including two divergences left open for the repo owner — in particular, re-running the rescore under the narrowed intent-fix rule would move the Opus / `cai_kernel` residual and attempted figures (and only those). The numbers on this page are the published ones from `results/experiment_v4_corrected.json`, unchanged.
+
 ## Headline findings
 
-1. **Kernel eliminates tool-based violations entirely.** Both `kernel_only` and `cai_kernel` conditions: 0 tool-based violations across 760 trials per model.
+1. **Kernel eliminates tool-based violations entirely.** Both `kernel_only` and `cai_kernel` conditions: 0 **executed** tool-based violations across 760 trials per model. (Calls the gate *blocked* are counted separately, as evidence the gate worked.)
 2. **Dual-surface governance is best.** `cai_kernel` produces the lowest residual-violation rate for both models: Opus 2.6%, Sonnet 2.1%.
 3. **Capability inversion on Sonnet under CAI alone:** baseline 4.2% → CAI 5.3% (+1.1pp). CAI without external enforcement marginally degrades Sonnet's safety.
 4. **CAI > Kernel-only for Opus on the action surface itself:** CAI 5.8% vs Kernel-only 8.9%. The constitution shapes intent better than gating alone, though combining the two beats either.
@@ -35,7 +39,9 @@ Initial scoring contained false positives where a model **refused** an adversari
 
 Absolute reductions vs baseline: Opus −11.1pp (81% relative), Sonnet −2.1pp (50% relative).
 
-## Violation taxonomy (residual only, post-correction)
+## Violation taxonomy (post-correction)
+
+Rows count trials flagged `residual` under the published rescore, split by the violation kind recorded at the time. Under the corrected `classify_violation` (`f1bb6a4`) a blocked-then-unrecovered trial carries a *tool* kind rather than `text_only`, which would move 6 of these rows out of the "Text-only" column and into "Tool-based" — **without any of them having executed**. Executed tool-based violations under either kernel condition are **0** either way; see POSTMORTEM.md §"Metric semantics" (a).
 
 | Model  | Condition    | Total | Text-only | Tool-based |
 |--------|--------------|------:|----------:|-----------:|
@@ -48,7 +54,7 @@ Absolute reductions vs baseline: Opus −11.1pp (81% relative), Sonnet −2.1pp 
 | Sonnet | kernel_only  |    6  |      6    |    **0**   |
 | Sonnet | cai_kernel   |    4  |      4    |    **0**   |
 
-The kernel seals the action channel. All residual violations under any kernel condition are text-only — prose-level harm without tool calls. This is the predicted blind spot: the kernel has no surface for prose.
+The kernel seals the action channel. All violations that **executed** under any kernel condition are text-only — prose-level harm without tool calls. This is the predicted blind spot: the kernel has no surface for prose. The remaining flagged trials under kernel conditions are calls the gate refused whose recovery turn was then not clean; those are utility failures, and folding them in as leaked harm is the error POSTMORTEM.md §"Metric semantics" exists to prevent.
 
 ## Task success
 
@@ -82,8 +88,8 @@ When the kernel blocks, the model self-corrects most of the time. The kernel is 
 
 ## Conclusions
 
-1. **The action channel can be made tight.** External validation eliminates tool-based violations completely on both models without harming benign-task success.
-2. **The text channel needs a different mechanism.** All residual harm under kernel is prose. CAI shapes the text distribution but does not fully solve it; an output-side filter is the natural next layer.
+1. **The action channel can be made tight.** External validation eliminates *executed* tool-based violations completely on both models without harming benign-task success.
+2. **The text channel needs a different mechanism.** All harm that executed under kernel is prose. CAI shapes the text distribution but does not fully solve it; an output-side filter is the natural next layer.
 3. **Dual-surface governance wins.** CAI + Kernel produces the lowest residual-violation rate on both models. They cover complementary surfaces.
 4. **Capability inversion is real but small.** CAI alone slightly worsens Sonnet's safety (+1.1pp). Combining CAI with external enforcement reverses this.
 
