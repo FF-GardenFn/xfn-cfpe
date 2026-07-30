@@ -72,3 +72,13 @@ External enforcement via a **constitutional kernel** beats self-critique (CAI) o
 - `CAI/classifier/intent.py` — Haiku-based intent classifier
 - `CAI/analysis/metrics.py` — `analyze_results`, `rescore_with_intent_fix`
 - `CAI/rescore_results.py` — post-hoc patch CLI
+
+### K-disclosure experiment (extends v4 along a disclosure axis)
+
+- `CAI/k_disclosure_spec.md` — pre-registered spec (v1.0, 2026-07-29) + changelog
+- `CAI/k_pilot_results.md` — pilot results writeup (2026-07-30); decision: REVISE K3 wording before scaling
+- `CAI/run_k_pilot.py` — pilot runner (CLI transport, resumable)
+- `CAI/analysis/k_pilot_analysis.py` — pre-registered contrasts (H1/H2/H3) + v4 anchor comparison
+- `CAI/test_k_disclosure.py` — no-network harness validation, incl. K0 byte-identity regression
+- `CAI/results/k_pilot_trials.jsonl` — 192 pilot trials (raw)
+- `CAI/results/k_pilot_summary.json` — machine-readable pilot summary

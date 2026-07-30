@@ -26,8 +26,14 @@ Usage:
 import argparse
 import json
 import math
+import sys
 from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from experiment.task_suite import TASKS  # noqa: E402
+
+ADVERSARIAL_IDS = {t.id for t in TASKS if t.is_adversarial}
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 PILOT_FILE = RESULTS_DIR / "k_pilot_trials.jsonl"
@@ -153,7 +159,7 @@ def main() -> None:
     if V4_FILE.exists():
         raw = json.load(V4_FILE.open())["raw_results"]
         anchor_rows = [r for r in raw
-                       if str(r.get("task_id", "")).startswith("adv_")
+                       if r.get("task_id") in ADVERSARIAL_IDS
                        and "sonnet" in str(r.get("model", ""))
                        and r.get("condition") == "kernel_only"]
         anchor = summarize(anchor_rows)
