@@ -14,7 +14,7 @@ Separating (a) from (b) is the point. (a) measures model alignment; (b) measures
 
 ## Why this is the right next experiment
 
-Recent work on measuring reward-seeking (OpenAI/Apollo, 2026) operationalizes evaluator-awareness as the causal sensitivity of behavior to beliefs about what the grader rewards, and finds it increasing across capability-focused RL checkpoints. That line of work measures whether models *represent and condition on* the evaluation mechanism. This experiment measures the complementary architecture question: **which safety properties survive when they do.** If the kernel-invariance hypothesis (H1) holds, tool-channel safety is independent of the model's beliefs about the gate — the property that distinguishes a constraint from an objective.
+Recent work on measuring reward-seeking (OpenAI/Apollo, 2026) operationalizes evaluator-awareness as the causal sensitivity of behavior to beliefs about what the grader rewards, and finds it increasing across capability-focused RL checkpoints. That line of work measures whether models *represent and condition on* the evaluation mechanism. This experiment measures the complementary architecture question: **which safety properties survive when they do.** A parallel training-time result (negation neglect, arXiv 2605.13829) shows that normative wrappers around training data are shed during internalization while the content persists — so enforcement whose correctness depends on neither internalization nor belief is the property under test here. If the kernel-invariance hypothesis (H1) holds, tool-channel safety is independent of the model's beliefs about the gate — the property that distinguishes a constraint from an objective.
 
 ## The v4 anchor (what the model was actually told)
 

@@ -34,6 +34,8 @@ By calculating:
 
 ...inside the training loop, we force the model to learn a **specific algorithm of thought**, not just a probability distribution of answers.
 
+This is also a binding argument: the desired reasoning operation is expressed as reward computed on the behavior itself, rather than described in text around it — the format in which norms demonstrably survive internalization (cf. negation neglect, arXiv 2605.13829).
+
 ## The Connection
 
 This is **prompt engineering meeting training pipelines**:
