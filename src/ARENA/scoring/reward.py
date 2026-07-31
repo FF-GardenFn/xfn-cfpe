@@ -1,11 +1,17 @@
 """Composite reward function for ARENA policy optimization.
 
 R = alpha * quality_score - beta * operational_cost - gamma * safety_penalty
+      [ - gamma_spirit * spirit_H ]   # optional coupled-objective hidden readout
 
 Where:
 - quality_score: weighted 8-dimension rubric score (0-10 scale)
 - operational_cost: cost equation from equ.md (USD, normalized)
-- safety_penalty: violation taxonomy from CAI experiments
+- safety_penalty: discrete violation taxonomy from CAI experiments
+- spirit_H: OPTIONAL continuous hidden objective H in [0,1] from the
+  coupled-objective screening design (CAI/coupled_objective_design.md). When
+  omitted, the reward is byte-identical to the pre-existing behavior. This wires
+  the hidden readout in as a live safety term; it does NOT demonstrate the
+  coupling is causal (that needs the live-model chooser). Infrastructure only.
 """
 from __future__ import annotations
 
@@ -62,6 +68,7 @@ class RewardConfig:
     alpha: float = 1.0   # Quality weight
     beta: float = 0.5    # Cost weight (lower = less cost-sensitive)
     gamma: float = 2.0   # Safety weight (higher = more safety-sensitive)
+    gamma_spirit: float = 2.0  # Weight on the coupled-objective hidden readout H in [0,1]
 
     # Cost normalization: divide USD cost by this to get 0-1 scale
     cost_normalizer: float = 5.0  # $5 = maximum expected cost for single interaction
@@ -81,6 +88,9 @@ class RewardBreakdown:
     operational_cost: float = 0.0   # Normalized cost (0-1)
     safety_penalty: float = 0.0     # Weighted safety violations
     total_reward: float = 0.0       # Final scalar reward
+
+    spirit_H: float = 0.0           # coupled-objective hidden readout H in [0,1] (clamped)
+    spirit_penalty: float = 0.0     # gamma_spirit-weighted spirit contribution to R
 
     quality_raw: dict[str, float] = field(default_factory=dict)
     cost_breakdown: CostBreakdown | None = None
@@ -148,12 +158,23 @@ class CompositeReward:
             penalty += SAFETY_PENALTY_WEIGHTS.get(v, 1.0)
         return penalty
 
+    def spirit_penalty(self, spirit_H: float) -> float:
+        """Clamp the coupled-objective hidden readout H to [0, 1].
+
+        H is the continuous spirit-violation score from the coupled-objective
+        design (CAI/kernel/spirit_scorer.py). It is a LOWER BOUND on true spirit
+        violation (H = 0 means 'no pattern matched', not 'clean'); the reward
+        uses it as given.
+        """
+        return max(0.0, min(1.0, float(spirit_H)))
+
     def compute(
         self,
         dimension_scores: dict[str, float],
         cost_breakdown: CostBreakdown,
         safety_violations: list[str] | None = None,
         hard_fails: list[str] | None = None,
+        spirit_H: float | None = None,
     ) -> RewardBreakdown:
         """Compute composite reward.
 
@@ -186,11 +207,24 @@ class CompositeReward:
                 - self.config.gamma * s_penalty
             )
 
+        # Coupled-objective hidden-readout safety term (additive). When spirit_H
+        # is omitted the reward is byte-identical to the pre-existing behavior;
+        # at spirit_H == 0 the contribution is exactly 0; at spirit_H == 1 it is
+        # exactly gamma_spirit. Applied in both branches so the boundary holds
+        # regardless of hard-fail.
+        spirit_pen = 0.0
+        if spirit_H is not None:
+            spirit_pen = self.spirit_penalty(spirit_H)
+            total = total - self.config.gamma_spirit * spirit_pen
+
         return RewardBreakdown(
             quality_score=q_score,
             operational_cost=norm_cost,
             safety_penalty=s_penalty,
             total_reward=total,
+            spirit_H=(spirit_pen if spirit_H is not None else 0.0),
+            spirit_penalty=(self.config.gamma_spirit * spirit_pen
+                            if spirit_H is not None else 0.0),
             quality_raw=dimension_scores,
             cost_breakdown=cost_breakdown,
             safety_violations=safety_violations,
