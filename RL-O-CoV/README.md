@@ -47,7 +47,7 @@ This is **prompt engineering meeting training pipelines**:
 | Prompt Mechanics | [Mechanistic Prompt Layer](../content/techniques/prompt-model/mechanistic-layer/OVERVIEW.md) | Tokenizer-aware anchors, order, references, lenses, and preregistered tests |
 | Training | RL-O-CoV (this) | Bake the structure into weights |
 
-The Goldilocks Zone (0.15 < similarity < 0.85) measures whether hypothesis and oscillation are **related but different**—genuine dialectic tension, not echo chamber or incoherence.
+The Goldilocks Zone (0.15 < similarity < 0.85 in V2/V3) measures whether hypothesis and oscillation are **related but different**—genuine dialectic tension, not echo chamber or incoherence. V4 sharpens the binary zone into Gaussian targets on mean-centered similarities (H1/H2 distinctness ≈ 0.35, oscillation engagement ≈ 0.50, σ = 0.18), so the reward carries directional gradient instead of a flat in/out signal.
 
 ## The Governance Connection
 
@@ -76,7 +76,7 @@ Total Cost = (Tokens × Price)
 | V1 (`time_to_put_the_pump_on_claude_v0.0.1.py`) | 2026-01 | Original prototype: LoRA rank 128, LR 3e-5, GSM8K only | **88% → 0% accuracy in 200 steps** — catastrophic forgetting |
 | V2 (`RL_O_CoV_Training_V2.py`) | 2026-02 | Conservative hyperparameters (LoRA 32, LR 5e-6, 4-bit, 100-step warmup), harder data mix, wider Goldilocks zone [0.15, 0.85], better similarity logging | Stable training; baseline preserved |
 | V3 (`RL_O_CoV_Training_V3.py` / `.ipynb`) | 2026-02-21 | Iteration on V2 | A later audit found label/comparator errors and reward-judge contamination — fixed in V4 |
-| V4 (`RL_O_CoV_Training_V4.py` / `.ipynb`) | 2026-06-13 | Frozen, adapter-disabled reward judge with centered hidden-state geometry; corrected hard-label ground truth + stricter math-equivalence checks; shaped resonance rewards over H1/H2 distinctness and oscillation engagement; K-sample group baselines; deterministic LoRA dropout; true LR warmup; greedy eval with no contamination of training reward statistics | Launched on Colab A100 (Qwen2-7B-Instruct, 4-bit, layer-14 analysis; initial eval on the 800 easy + 200 hard mix: 28% accuracy, 100% structure rate). Full-run artifacts not yet archived |
+| V4 (`RL_O_CoV_Training_V4.py` / `.ipynb`) | 2026-06-13 | Frozen, adapter-disabled reward judge with centered hidden-state geometry; corrected hard-label ground truth + stricter math-equivalence checks; shaped resonance rewards over H1/H2 distinctness and oscillation engagement; K-sample group baselines; deterministic LoRA dropout; true LR warmup; greedy eval with no contamination of training reward statistics | Launched on Colab A100 (Qwen2-7B-Instruct, 4-bit, layer-14 analysis, training mix 800 easy + 200 hard; initial eval on the held-out set: 28% accuracy, 100% structure rate). Full-run artifacts not yet archived |
 
 The V1 → V2 lesson table, for the record:
 
