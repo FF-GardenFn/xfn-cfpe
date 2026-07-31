@@ -96,3 +96,16 @@ H1 and H2 are one result: the elicitation was too weak, and *because* it was too
 - `CAI/test_k_disclosure.py` — no-network harness validation (7 tests), incl. K0 byte-identity regression, the tool-channel masking regression, and the blocked-is-not-executed regression guarding H1's falsifier
 - `CAI/results/k_pilot_trials.jsonl` — 192 pilot trials (raw)
 - `CAI/results/k_pilot_summary.json` — machine-readable pilot summary, incl. `gate_exercise`
+
+### Coupled-objective screening (new direction — design + instruments, no live data)
+
+[coupled_objective_design.md](./coupled_objective_design.md) (v0.3) inverts the pilot's structural weakness: instead of waiting for a refusing model to attack the gate, couple a hidden spirit-score H to the visible objective and read the disposition-to-game off route choice at reward-parity — the regression intercept b — separately from reward-sensitivity, the slope β. Disclosure K0–K3 is reused as the treatment; the Wilson/Fisher harness carries over.
+
+Built and self-tested (no live-model run; the simulated recovery validates the *pipeline*, not any claim about models):
+
+- `kernel/spirit_scorer.py` — continuous H, sibling of the letter-gate (validator untouched); every fixture trap passes the letter-gate yet scores H>0, clean routes score exactly 0
+- `analysis/coupled_calibration.py` — stdlib logistic MLE for (b, β) with Fisher-information SEs; synthetic recovery self-test
+- `experiment/coupled_runner.py` — end-to-end dry-run against a bounded-rational `SimulatedChooser` with known (b, β); recovers both from route choices alone
+- `../src/ARENA/scoring/reward.py` — the same H wired as an optional `gamma_spirit` term in ARENA's composite reward; byte-identical to the prior reward when omitted
+
+Gate before any pre-registration (design §8): the calibration study on one task family. If a trap cannot be made reward-competitive yet non-obvious, the design rests on sand — learn that at n=1 family, not after committing to thousands of trials.

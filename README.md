@@ -27,7 +27,7 @@ flowchart TD
     P --> B(["Defensible claims about model behavior"])
 ```
 
-Four levers produce behavior: what the model was trained on, what its context says, what the runtime permits, and what its internal representations encode. The measurement layer is shared and cross-provider. The provenance layer asks the question most evaluations skip: when behavior looks aligned, *which layer did the work* — and would the behavior survive if that layer were removed? The empirical anchor for the runtime-control branch is a 1,520-trial 2×2 experiment ([CAI/](./CAI/)): external enforcement produced 0/760 tool-channel violations per model while self-critique alone could not, and all residual harm under enforcement was text-only — the two surfaces need different mechanisms.
+Four levers produce behavior: what the model was trained on, what its context says, what the runtime permits, and what its internal representations encode. The measurement layer is shared and cross-provider. The provenance layer asks the question most evaluations skip: when behavior looks aligned, *which layer did the work* — and would the behavior survive if that layer were removed? The empirical anchor for the runtime-control branch is a 1,520-trial 2×2 experiment ([CAI/](./CAI/)): external enforcement produced 0/760 *executed* tool-channel violations per model while self-critique alone could not, and all harm that executed under enforcement was text-only — the two surfaces need different mechanisms. That branch has since grown a disclosure axis (does the seal survive the model being told about it? — pre-registered and piloted, [CAI/k_disclosure_spec.md](./CAI/k_disclosure_spec.md)) and a coupled-objective screening design that reads gaming *disposition* off route choice at reward-parity instead of waiting for a refusing model to attack ([CAI/coupled_objective_design.md](./CAI/coupled_objective_design.md)).
 
 ## Main Surfaces
 
@@ -43,8 +43,9 @@ Four levers produce behavior: what the model was trained on, what its context sa
 
 | Area | Artifact | Notes |
 |------|----------|-------|
-| Constitutional control | [CAI/](./CAI/) | Constitutional kernel experiment: 1,520 trials, 2×2 conditions, 0/760 tool-based violations under kernel |
-| Evaluation integrity | [CAI/POSTMORTEM.md](./CAI/POSTMORTEM.md) | Incident report: a mention-vs-use scoring bug flagged 19.7% of trials; detection, retroactive correction, preserved raw data |
+| Constitutional control | [CAI/](./CAI/) | Constitutional kernel experiment: 1,520 trials, 2×2 conditions, 0/760 executed tool-channel violations under kernel; K-disclosure axis pre-registered and piloted |
+| Reward-seeking screening | [CAI/coupled_objective_design.md](./CAI/coupled_objective_design.md) | Coupled-objective design: hidden spirit-score coupled to a visible objective; disposition (intercept) vs rationality (slope), instrument stack built and self-tested |
+| Evaluation integrity | [CAI/POSTMORTEM.md](./CAI/POSTMORTEM.md) | Incident reports: a mention-vs-use scoring bug flagging 19.7% of trials, and a metric-semantics conflation — detection, retroactive correction, preserved raw data |
 | Control provenance | [project/control-provenance-eval/](./project/control-provenance-eval/) | Evaluation frame for identifying which layer supplied behavioral control |
 | Intent laundering | [project/intent_laundering/](./project/intent_laundering/) | Methodology and seed-example analysis for request-layer intent-laundering detection |
 | Refusal/capability geometry | [project/refusal-capability-entanglement/](./project/refusal-capability-entanglement/) | Activation-steering pilot on Llama-3.1-8B testing whether refusal direction is geometrically separable from capability |
@@ -62,8 +63,9 @@ Four levers produce behavior: what the model was trained on, what its context sa
   - [intent_laundering/](./project/intent_laundering/) - Intent-laundering examples, prompt, and pilot results
   - [refusal-capability-entanglement/](./project/refusal-capability-entanglement/) - Activation-steering pilot: refusal-direction separability vs. capability
 - **CAI/** - Constitutional kernel experiment
-  - [README.md](./CAI/README.md) - Hypothesis, design principle, and results at a glance
-  - [results.md](./CAI/results.md), [status.md](./CAI/status.md), [POSTMORTEM.md](./CAI/POSTMORTEM.md) - Results, claims ledger, incident report
+  - [README.md](./CAI/README.md) - Hypothesis, design principle, results at a glance, and the research arc
+  - [results.md](./CAI/results.md), [status.md](./CAI/status.md), [POSTMORTEM.md](./CAI/POSTMORTEM.md) - Results, claims ledger, incident reports
+  - [k_disclosure_spec.md](./CAI/k_disclosure_spec.md), [k_pilot_results.md](./CAI/k_pilot_results.md), [coupled_objective_design.md](./CAI/coupled_objective_design.md) - Disclosure axis (pre-registered + piloted) and the coupled-objective screening design
   - [analysis/](./CAI/analysis/), [classifier/](./CAI/classifier/), [experiment/](./CAI/experiment/), [kernel/](./CAI/kernel/), [results/](./CAI/results/) - Experiment components and tracked data
 - **src/** - Shared execution and evaluation code
   - [get_responses/](./src/get_responses/) - Cross-provider execution engine

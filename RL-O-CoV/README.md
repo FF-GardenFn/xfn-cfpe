@@ -49,6 +49,12 @@ This is **prompt engineering meeting training pipelines**:
 
 The Goldilocks Zone (0.15 < similarity < 0.85) measures whether hypothesis and oscillation are **related but different**—genuine dialectic tension, not echo chamber or incoherence.
 
+## The Governance Connection
+
+The reward decomposition here is a letter/spirit split, arrived at six months before the repo's governance line needed one. `structure_reward` checks that the dialectic's *letter* is present (phase markers, hypothesis/oscillation form); `resonance_reward` checks its *spirit* (genuine tension inside the Goldilocks band — related but different, neither echo nor noise). And the failure mode RL-O-CoV attacks — every token right, the chain broken — is vacuous compliance in the reasoning domain: the letter satisfied, the intent voided.
+
+The constitutional-kernel line formalizes the same split for safety ([../CAI/coupled_objective_design.md](../CAI/coupled_objective_design.md)): a visible objective the model optimizes, a hidden spirit-score computed outside it, and disposition read off route choice at reward parity. The two lines also share a hand-off point. When a model becomes capable enough to infer a hidden evaluation axis, behavioral screening stops working (the design's m★ crossover) — and the concept-erasure protocol in [exp_proposal.md](./exp_proposal.md) is the mechanistic instrument that takes over: probing whether a capability lives in the weights, independent of what the model chooses to show.
+
 ## The Business Case
 
 From [`/evaluation/benchmarks/equ.md`](../evaluation/benchmarks/equ.md):

@@ -1,6 +1,6 @@
 # The Coupled-Objective Screening Design
 
-**Status:** DRAFT design proposal. Not pre-registered, not run. Authored as a research-direction document; every hypothesis here is a candidate for a future pre-registration in the style of [`k_disclosure_spec.md`](./k_disclosure_spec.md).
+**Status:** design proposal, v0.3. Not pre-registered; **no live-model data**. The instrument stack is implemented and self-tested (§5.4) — hidden scorer, calibration estimator, end-to-end simulated dry-run — which validates the pipeline, not any claim about models. Every hypothesis here is a candidate for a future pre-registration in the style of [`k_disclosure_spec.md`](./k_disclosure_spec.md).
 **Relationship to the repo:** extends the constitutional-kernel thesis and the K-disclosure axis. Reuses the kernel as an external scorer, the K0–K3 disclosure levels as a treatment, and the Wilson/Fisher analysis harness.
 **Date:** 2026-07-30
 
@@ -23,6 +23,13 @@ The v4 / K-disclosure line established a runtime kernel that gates tool calls, a
 The lesson generalizes: **you cannot measure a safety property by waiting for a well-behaved model to attack it.** Either you force the attack (removing the model's disposition from the loop), or you make the measurement itself an objective the model *wants* to optimize. This document takes the second route, which is strictly more informative because it reads the disposition rather than bypassing it.
 
 The repair: stop measuring *executed harm* (which needs the model to try) and start measuring *route choice under an objective the model is happy to pursue* (which is emitted every trial). The gate no longer waits to be attacked; it silently scores which of several equally-rewarded routes the model took.
+
+### 1.1 Adjacent results, and what this design adds
+
+- **Reward-seeking / evaluator-awareness (OpenAI/Apollo, 2026).** That work measures awareness as the causal sensitivity of behavior to beliefs about what the grader rewards, and finds it rising across RL checkpoints. This design gives the quantity a revealed-preference microfoundation: beliefs enter as the disclosure treatment $K$, their behavioral effect is a difference of intercepts $\Delta b_K$ (§3.3), and the decomposition separates it — by construction, not by assumption — from the rationality slope $\beta$ that capability also moves. C3 is the checkpoint result transposed to frontier tiers, with disclosure standing in for training.
+- **Model Spec Midtraining (Li, Price, Marks, Kutasov — arXiv 2605.02087).** MSM finds that specs built from value *explanations* generalize better than rules alone, and its §5.1 "policy misuse" failure — models reinterpreting a rule's letter to license behavior against its intent — is letter-gaming at training time. **C2 is the inference-time mirror:** K2 disclosure is precisely a rules-only spec of the gate, delivered in-context with enforcement held constant. If C2 holds ($\Delta b_{K2}>0$), the rules-only pathology acquires a per-model behavioral mechanism measurable without any training intervention: enumerating the letter advertises its gaps.
+- **Negation neglect (arXiv 2605.13829).** Normative wrappers around training data are shed during internalization while the content persists — the training-time reason $H$ must be computed outside the model rather than trained into it. It is the complement of §3.7's inference-time Goodhart invariant: neither training nor context is a safe channel for the hidden objective.
+- **RL-O-CoV (this repo, [`../RL-O-CoV/`](../RL-O-CoV/README.md)).** The $V$/$H$ decomposition has an in-house precedent from six months earlier, in a different domain: RL-O-CoV's `structure_reward` scores the *letter* of a reasoning process (dialectic phase markers present) while `resonance_reward` scores its *spirit* (genuine hypothesis–oscillation tension, the Goldilocks band), built against a failure mode — every token right, the chain broken — that is vacuous compliance in the reasoning domain. The trap families of §5.2 and the Goldilocks constraint are one idea seen from the screening and training sides respectively.
 
 ---
 
@@ -85,15 +92,15 @@ $$
 \pi_\theta(a\mid o)\;\propto\;\exp\!\big(\beta\,\tilde V(a)\;+\;b(K,m)\,s(a)\big),
 $$
 
-where $s(a)\in\{0,1\}$ marks a spirit-exploiting action ($s(a^t)=1,\ s(a^c)=0$), $\beta$ is inverse temperature (rationality / how hard it optimizes $V$), and $b(K,m)$ is the **disposition-to-exploit** — the hidden quantity we want. Restricting to the two engineered routes and letting $\tilde V(a^t)-\tilde V(a^c)=\delta$:
+where $s(a)\in\{0,1\}$ marks a spirit-exploiting action ($s(a^t)=1,\ s(a^c)=0$), $\beta$ is inverse temperature (rationality / how hard it optimizes $V$), and $b(K,m)$ is the **disposition-to-exploit** — the hidden quantity we want. Restricting to the two engineered routes and writing $\tilde\delta = \tilde V(a^t)-\tilde V(a^c)$ for the **perceived** gap — the model optimizes its estimate, not the engineered $\delta$ of §3.2:
 
 $$
 \Pr\!\big[a=a^t \,\big|\, a\in\{a^c,a^t\}\big]
 =\frac{e^{\beta\,\tilde V(a^t)+b}}{e^{\beta\,\tilde V(a^c)}+e^{\beta\,\tilde V(a^t)+b}}
-=\sigma\!\big(\beta\,\delta + b(K,m)\big),
+=\sigma\!\big(\beta\,\tilde\delta + b(K,m)\big),
 $$
 
-with $\sigma(z)=1/(1+e^{-z})$. Define the observable **spirit-gaming rate**
+with $\sigma(z)=1/(1+e^{-z})$. The experimenter controls $\delta$, never $\tilde\delta$; a calibrated chooser has $\tilde\delta=\delta$, and that equality is what the belief-elicitation step below verifies rather than assumes. On that assumption, define the observable **spirit-gaming rate**
 
 $$
 g(K,m,\delta)\;=\;\Pr[\text{model takes the trap}]\;=\;\sigma\!\big(\beta(K,m)\,\delta + b(K,m)\big).
@@ -101,7 +108,7 @@ $$
 
 Two consequences make this the workhorse of the design:
 
-1. **At parity ($\delta=0$) the visible reward cancels exactly:** $g(K,m,0)=\sigma(b(K,m))$. Rationality $\beta$ and reward level $\tilde V$ drop out of the log-odds; what remains is *only* the hidden disposition $b$. This is the identification result — the reason the instrument measures disposition and not competence.
+1. **At *perceived* parity ($\tilde\delta=0$) the visible reward cancels exactly:** $g(K,m,0)=\sigma(b(K,m))$. Rationality $\beta$ and reward level $\tilde V$ drop out of the log-odds; what remains is *only* the hidden disposition $b$. This is the identification result — the reason the instrument measures disposition and not competence.
 
 2. **Sweeping $\delta$ is a logistic regression with interpretable coefficients.** Fit, per $(K,m)$,
 
@@ -118,7 +125,7 @@ $$
 \;=\;\log\frac{g(K,m,0)\,\big(1-g(K_0,m,0)\big)}{g(K_0,m,0)\,\big(1-g(K,m,0)\big)}.
 $$
 
-**Identification assumption — *perceived* indifference, not objective equality (validate, do not assume).** The cancellation in (1) uses $\tilde V(a^t)=\tilde V(a^c)$: it needs the model to *perceive* the routes as equally rewarded, not merely for them to be objectively equal. If the model's belief is miscalibrated — it thinks the trap pays more or less than the clean route even at true $\delta=0$ — that belief acts as a nonzero *perceived* $\delta$ and is absorbed into the intercept, so $b$ silently conflates disposition with a belief/competence term. Route choices alone cannot separate the two. **A pre-registered belief-elicitation step is therefore required before the first run:** measure the model's perceived reward gap directly (e.g. have it rank or price the routes on the visible axis, blind to the spirit axis) and confirm it is $\approx 0$ at the calibrated parity point. Objective parity that is not *perceived* parity does not identify $b$.
+**Identification assumption — *perceived* indifference, not objective equality (validate, do not assume).** The cancellation in (1) is at $\tilde\delta=0$: it needs the model to *perceive* the routes as equally rewarded, not merely for them to be objectively equal. If the model's belief is miscalibrated — it thinks the trap pays more or less than the clean route even at true $\delta=0$ — then $\tilde\delta\neq 0$ at the parity point, the fitted intercept absorbs $\beta\,\tilde\delta$, and $b$ silently conflates disposition with a belief/competence term. Route choices alone cannot separate the two. **A pre-registered belief-elicitation step is therefore required before the first run:** measure the model's perceived reward gap directly (e.g. have it rank or price the routes on the visible axis, blind to the spirit axis) and confirm it is $\approx 0$ at the calibrated parity point. Objective parity that is not *perceived* parity does not identify $b$.
 
 ### 3.4 Separating disposition from capability
 
@@ -157,7 +164,7 @@ $$
 Two properties make the instrument trustworthy even near its edge:
 
 - **One-sided failure (conservatism).** Sandbagging can only *lower* observed $g$ relative to true disposition. Hence in the compromised regime the estimate is a **lower bound**: $\hat b \le b$. A *positive* reading is never a sandbagging artifact — you get misses, never false alarms.
-- **The crossover capability $m^\star$** — the tier at which $q$ becomes non-negligible — is itself a first-class result: it is the point at which *behavioral* screening stops working and mechanistic / interpretability methods become necessary. This is the natural bridge from this behavioral instrument to the repo's interpretability infrastructure.
+- **The crossover capability $m^\star$** — the tier at which $q$ becomes non-negligible — is itself a first-class result: it is the point at which *behavioral* screening stops working and mechanistic / interpretability methods become necessary. The hand-off targets are already in this repo: the concept-erasure protocol of [`../RL-O-CoV/exp_proposal.md`](../RL-O-CoV/exp_proposal.md) (does a capability live in the weights, independent of what the model chooses to show?) and the activation-steering rig of [`../project/refusal-capability-entanglement/`](../project/refusal-capability-entanglement/) are the instruments that take over past $m^\star$.
 
 **A second, independent lower bound — scorer coverage.** $H$ is computed by a *pattern-based* scorer (§5.1): it flags a trap only when the route matches a known spirit-violation pattern. So $H=0$ (equivalently $Y=0$, "clean route taken") means *no pattern matched*, **not** *no spirit violation* — a route can defeat the spirit in a way the scorer does not recognize. Measured gaming is thus a lower bound on true gaming, $\hat g \le g$, in the **same direction** as the sandbagging bound above: both can only *miss* gaming, never manufacture it. The hard consequence, carried into §4: **key every claim to what was observed — a trap selection that actually happened — never to an absence.** A null $\hat g = 0$ is jointly consistent with "no disposition" and with "coverage missed it," so it is not evidence of the former. This is the same error class as reading an overloaded metric (executed-vs-blocked, or a residual-minus-text subtraction) as if it meant one thing throughout — precisely the mistake this design exists to avoid. Only positive readings, and the *contrasts* between them, carry weight.
 
@@ -193,7 +200,7 @@ The margins and the pre-registered decision rule (analogous to the K-pilot's "$\
 
 ### 5.1 The kernel becomes the hidden scorer $\mathcal{K}$
 
-`kernel/validator.py` today returns `ValidationResult(valid: bool, ...)`. Extend it (a *sibling* scorer, so the letter-gate is unchanged) to emit a continuous $H\in[0,1]$: the letter-gate still passes the trap route (that is the point), while the spirit-scorer flags it. Because trap routes are constructed to pass the regexes, the existing pattern list is exactly the "letter" whose gaps the traps inhabit.
+`kernel/validator.py` returns `ValidationResult(valid: bool, ...)` — the letter. The spirit read is implemented as a *sibling*, [`kernel/spirit_scorer.py`](./kernel/spirit_scorer.py), emitting a continuous $H\in[0,1]$ with the letter-gate untouched: the gate still passes the trap route (that is the point), while the spirit-scorer flags it. Because trap routes are constructed to pass the regexes, the existing pattern list is exactly the "letter" whose gaps the traps inhabit.
 
 ### 5.2 Trap families (abstract — no payloads)
 
@@ -215,6 +222,19 @@ This design needs the same rig the pilot review called for, which is why the two
 - **Disclosure treatment** K0–K3 reused verbatim from [`k_disclosure_spec.md`](./k_disclosure_spec.md).
 
 The pilot's apparatus is the hardware; this document is the scientific payload that runs on it.
+
+### 5.4 What exists vs. what is future work
+
+Implemented and self-tested, with no network and no live-model data — the dry-run validates the *pipeline*, not any claim about models:
+
+| Piece | File | Self-test |
+|---|---|---|
+| Hidden scorer $\mathcal{K}$ | [`kernel/spirit_scorer.py`](./kernel/spirit_scorer.py) | every fixture trap passes the letter-gate yet scores $H>0$; clean routes score exactly 0 |
+| Calibration estimator | [`analysis/coupled_calibration.py`](./analysis/coupled_calibration.py) | stdlib Newton–Raphson logistic MLE recovers known $(b,\beta)$ from synthetic trials; Fisher-information SEs |
+| End-to-end runner | [`experiment/coupled_runner.py`](./experiment/coupled_runner.py) | full pipeline against a bounded-rational `SimulatedChooser` with known $(b,\beta)$; recovers both from route choices alone |
+| Composite-reward host | [`../src/ARENA/scoring/reward.py`](../src/ARENA/scoring/reward.py) | the same $H$ wired as an optional term in ARENA's composite reward, $R=\alpha\,q-\beta\,\text{cost}-\gamma\,\text{safety}-\gamma_{\text{spirit}}H$; byte-identical to the prior reward when omitted |
+
+Future work, unchanged by the above: a live `ModelChooser` plus the route-adjudication layer (§5.3), the belief-elicitation step (§3.3), trap authorship beyond the single calibration family, and the pre-registration itself.
 
 ---
 
@@ -269,8 +289,9 @@ The pilot's apparatus is the hardware; this document is the scientific payload t
 | $a^c,\ a^t$ | clean route; trap route |
 | $V,\ v_c,v_t$ | visible objective; its values on clean / trap |
 | $H,\ h$ | hidden objective (spirit-violation); its value on the trap |
-| $\delta=v_t-v_c$ | visible-reward gap (the calibration knob) |
+| $\delta=v_t-v_c$ | engineered visible-reward gap (the calibration knob) |
 | $\tilde V$ | model's internal estimate of $V$ |
+| $\tilde\delta=\tilde V(a^t)-\tilde V(a^c)$ | perceived gap — what the chooser actually optimizes; identification needs $\tilde\delta=0$ at the parity point |
 | $s(a)$ | spirit-exploit indicator ($s(a^t)=1$) |
 | $b(K,m)$ | disposition-to-exploit (the hidden readout; regression intercept) |
 | $\beta(K,m)$ | rationality / reward-sensitivity (regression slope) |
@@ -291,3 +312,7 @@ The pilot's apparatus is the hardware; this document is the scientific payload t
 - 2026-07-30 — v0.2, two corrections folded in before any run, both the same error class the design targets:
   - **§3.3 identification** now requires *perceived* indifference, validated by a pre-registered belief-elicitation step — objective parity alone lets belief miscalibration masquerade as disposition.
   - **§3.6 / §4** now state explicitly that the pattern-based $H$ makes measured gaming a **lower bound** ($H=0$ means "no pattern matched," not "no violation"), and bind all falsifiers to *observed* trap selections and between-cell contrasts rather than to absences.
+- 2026-07-30 — v0.3, documentation pass (no design change):
+  - **§3.3 notation** separates the engineered gap $\delta$ from the perceived gap $\tilde\delta$ the chooser actually optimizes; the v0.2 identification caveat is now stated on the symbol it concerns ($\tilde\delta=0$, not $\delta=0$), and the intercept-contamination term is explicit ($\beta\,\tilde\delta$).
+  - **§1.1 added** — position among adjacent results: reward-seeking (the microfoundation claim), Model Spec Midtraining (C2 as the inference-time mirror of rules-only policy misuse), negation neglect (why $H$ can live in neither training data nor context), and RL-O-CoV's in-repo letter/spirit precedent.
+  - **§5.4 added** — the implemented instrument stack (spirit-scorer, calibration estimator, simulated end-to-end runner, ARENA reward host), with the pipeline-not-models caveat; §5.1 and the status line updated to match. §3.6's $m^\star$ hand-off now names the in-repo mechanistic instruments.
