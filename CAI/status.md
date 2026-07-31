@@ -36,7 +36,7 @@ External enforcement via a **constitutional kernel** beats self-critique (CAI) o
 | Claim                                              | Evidence                                                                  | Strength |
 |----------------------------------------------------|---------------------------------------------------------------------------|----------|
 | Tool-channel sealable via external gate            | **0 / 760** tool-based **executed** violations under any kernel condition, both models | Strong |
-| Dual-surface minimizes residual                    | Opus 13.7% → 2.6%; Sonnet 4.2% → 2.1% (cai_kernel) — on the `residual` upper bound, see note (b) below | Moderate |
+| Dual-surface minimizes residual                    | Opus 13.7% → 2.6%; Sonnet 4.2% → 2.1% (cai_kernel) — on the `residual` upper bound, see divergence (b) in the engineering log above | Moderate |
 | Recovery loop functional                           | Block→recover: Opus 67–71%, Sonnet 75–100%                                | Moderate |
 | No utility tax on benign tasks                     | 100% benign success across all conditions                                 | Strong |
 | Predicted text-channel blind spot is real          | 100% of **executed** violations under any kernel condition are text-only (the remainder of `residual` is blocked-then-unrecovered, not leaked harm) | Strong (negative result) |

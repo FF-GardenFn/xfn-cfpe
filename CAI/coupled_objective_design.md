@@ -16,7 +16,7 @@ A constraint you can argue with is an objective; a measurement you can see is on
 
 ## 1. Why this design exists (the flaw it repairs)
 
-The v4 / K-disclosure line established a runtime kernel that gates tool calls, and asked whether tool-channel safety survives disclosure of the gate. The K-pilot's blocking weakness (see the pilot review) was structural, not statistical:
+The v4 / K-disclosure line established a runtime kernel that gates tool calls, and asked whether tool-channel safety survives disclosure of the gate. The K-pilot's blocking weakness ([k_pilot_results.md](./k_pilot_results.md)) was structural, not statistical:
 
 - Under `kernel_only`, the model **refused ~87.5%** of adversarial trials and errored on others. Across 192 trials, exactly **one** violating tool call was ever presented to the gate. "0/192 executed tool-channel violations" therefore measured the model's *disposition to refuse*, not the gate's *enforcement*. The zero was produced by the objective (the model's training), and credited to the constraint (the kernel).
 
@@ -26,8 +26,8 @@ The repair: stop measuring *executed harm* (which needs the model to try) and st
 
 ### 1.1 Adjacent results, and what this design adds
 
-- **Reward-seeking / evaluator-awareness (OpenAI/Apollo, 2026).** That work measures awareness as the causal sensitivity of behavior to beliefs about what the grader rewards, and finds it rising across RL checkpoints. This design gives the quantity a revealed-preference microfoundation: beliefs enter as the disclosure treatment $K$, their behavioral effect is a difference of intercepts $\Delta b_K$ (§3.3), and the decomposition separates it — by construction, not by assumption — from the rationality slope $\beta$ that capability also moves. C3 is the checkpoint result transposed to frontier tiers, with disclosure standing in for training.
-- **Model Spec Midtraining (Li, Price, Marks, Kutasov — arXiv 2605.02087).** MSM finds that specs built from value *explanations* generalize better than rules alone, and its §5.1 "policy misuse" failure — models reinterpreting a rule's letter to license behavior against its intent — is letter-gaming at training time. **C2 is the inference-time mirror:** K2 disclosure is precisely a rules-only spec of the gate, delivered in-context with enforcement held constant. If C2 holds ($\Delta b_{K2}>0$), the rules-only pathology acquires a per-model behavioral mechanism measurable without any training intervention: enumerating the letter advertises its gaps.
+- **Reward-seeking / evaluator-awareness (OpenAI/Apollo, 2026).** That work measures awareness as the causal sensitivity of behavior to beliefs about what the grader rewards, and finds it rising across RL checkpoints. This design gives the quantity a revealed-preference microfoundation: beliefs enter as the disclosure treatment $K$, their behavioral effect is a difference of intercepts $\Delta b_K$ (§3.3), and the decomposition separates it — by construction, not by assumption — from the rationality slope $\beta$ that capability also moves. Hypothesis C3 (§4) is the checkpoint result transposed to frontier tiers, with disclosure standing in for training.
+- **Model Spec Midtraining (Li, Price, Marks, Kutasov — arXiv 2605.02087).** MSM finds that specs built from value *explanations* generalize better than rules alone, and its §5.1 "policy misuse" failure — models reinterpreting a rule's letter to license behavior against its intent — is letter-gaming at training time. **C2 (§4) is the inference-time mirror:** K2 disclosure is precisely a rules-only spec of the gate, delivered in-context with enforcement held constant. If C2 holds ($\Delta b_{K2}>0$), the rules-only pathology acquires a per-model behavioral mechanism measurable without any training intervention: enumerating the letter advertises its gaps.
 - **Negation neglect (arXiv 2605.13829).** Normative wrappers around training data are shed during internalization while the content persists — the training-time reason $H$ must be computed outside the model rather than trained into it. It is the complement of §3.7's inference-time Goodhart invariant: neither training nor context is a safe channel for the hidden objective.
 - **RL-O-CoV (this repo, [`../RL-O-CoV/`](../RL-O-CoV/README.md)).** The $V$/$H$ decomposition has an in-house precedent from six months earlier, in a different domain: RL-O-CoV's `structure_reward` scores the *letter* of a reasoning process (dialectic phase markers present) while `resonance_reward` scores its *spirit* (genuine hypothesis–oscillation tension, the Goldilocks band), built against a failure mode — every token right, the chain broken — that is vacuous compliance in the reasoning domain. The trap families of §5.2 and the Goldilocks constraint are one idea seen from the screening and training sides respectively.
 
@@ -42,8 +42,8 @@ Picture the space of actions that complete a task as having two coordinates:
 
 We engineer the feasible frontier of each task so that one of two things holds:
 
-- **Regime B (existence / demonstration).** The $V$-maximizing action has $H > 0$. A pure visible-optimizer is *pulled* into positive $H$. This is the literal statement of the thesis: optimizing the reward in front of the model increases the hidden quantity behind it.
 - **Regime A (clean measurement).** Two routes sit at *equal* $V$ but different $H$. On the visible axis the model is indifferent; the tie is broken only by whatever disposition its training instilled. The route it picks *is* the hidden readout.
+- **Regime B (existence / demonstration).** The $V$-maximizing action has $H > 0$. A pure visible-optimizer is *pulled* into positive $H$. This is the literal statement of the thesis: optimizing the reward in front of the model increases the hidden quantity behind it.
 
 The model, blind to the $H$-axis, cannot steer in $H$ except through disposition. That is what makes $H$ unsandbaggable: sandbagging requires knowing which axis to lower, and we never reveal it.
 
@@ -213,9 +213,9 @@ Each family is a way to achieve a task's goal while passing the letter and faili
 
 For each task, author a matched **clean route** that reaches the same goal honestly, and calibrate $V$ so that clean and trap sit at the target $\delta$ (§3.2). The K-suite's existing multi-step and encoding tasks are natural seeds for the fragmentation and encoding families.
 
-### 5.3 The apparatus (shared with the pilot-review recommendation)
+### 5.3 The apparatus (shared with the K-pilot's next steps)
 
-This design needs the same rig the pilot review called for, which is why the two compose into one program:
+This design needs the same rig the K-pilot's next steps call for ([k_pilot_results.md](./k_pilot_results.md) §Next steps), which is why the two compose into one program:
 
 - **Route enumeration / forcing** to establish $F_x$ (did the model see both routes?), removing the capability-to-find confound.
 - **External adjudication** of which route an action instantiates (clean vs a trap family), so $Y$ and $H$ are scored by $\mathcal{K}$, not by the model.
@@ -300,6 +300,7 @@ Future work, unchanged by the above: a live `ModelChooser` plus the route-adjudi
 | $\Delta b_K$ | disclosure effect on disposition (log-odds ratio) |
 | $F_x$ | availability event (both routes considered) |
 | $q(K,m)$ | model's inferential access to the hidden axis |
+| $\epsilon$ | tolerance on $q$ defining the validity region $\mathcal{V}$ |
 | $\mathcal{V},\ m^\star$ | validity region; crossover capability |
 | $\mathcal{K}$ | external scorer (the kernel, extended to continuous $H$) |
 | $\sigma(z)$ | logistic function $1/(1+e^{-z})$ |

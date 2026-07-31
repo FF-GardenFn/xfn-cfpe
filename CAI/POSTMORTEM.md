@@ -1,6 +1,6 @@
 # Post-mortem: The Eval That Flagged Its Own Refusals
 
-**Incident class:** evaluation false positives · **Affected:** 299 / 1,520 trials (19.7%) · **Status:** corrected, both fixes shipped, raw data preserved
+**Incidents:** (1) evaluation false positives — 299 / 1,520 trials (19.7%); corrected, both fixes shipped, raw data preserved · (2) metric semantics — `residual_violation` conflated two outcomes; split at the source, two divergences documented below and deliberately left open
 
 ## TL;DR
 
