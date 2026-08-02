@@ -77,6 +77,7 @@ Total Cost = (Tokens × Price)
 | V2 (`RL_O_CoV_Training_V2.py`) | 2026-02 | Conservative hyperparameters (LoRA 32, LR 5e-6, 4-bit, 100-step warmup), harder data mix, wider Goldilocks zone [0.15, 0.85], better similarity logging | Stable training; baseline preserved |
 | V3 (`RL_O_CoV_Training_V3.py` / `.ipynb`) | 2026-02-21 | Iteration on V2 | A later audit found label/comparator errors and reward-judge contamination — fixed in V4 |
 | V4 (`RL_O_CoV_Training_V4.py` / `.ipynb`) | 2026-06-13 | Frozen, adapter-disabled reward judge with centered hidden-state geometry; corrected hard-label ground truth + stricter math-equivalence checks; shaped resonance rewards over H1/H2 distinctness and oscillation engagement; K-sample group baselines; deterministic LoRA dropout; true LR warmup; greedy eval with no contamination of training reward statistics | Launched on Colab A100 (Qwen2-7B-Instruct, 4-bit, layer-14 analysis, training mix 800 easy + 200 hard; initial eval on the held-out set: 28% accuracy, 100% structure rate). Full-run artifacts not yet archived |
+| V5 (`RL_O_CoV_Training_V5.py` / `.ipynb`) | 2026-08-02 | Post-launch review fixes: marker-form section parsing (prose "answer" no longer truncates phases), last-`Answer:` extraction, eval RNG isolation, config-driven temperature, step-aligned history, hard pool doubled to 20 hand-verified problems, module-level pure-text parsing with a 22-case stdlib self-test | Not yet run — current implementation; V4 preserved as the archived-run artifact |
 
 The V1 → V2 lesson table, for the record:
 
@@ -90,7 +91,7 @@ The V1 → V2 lesson table, for the record:
 
 ## Status
 
-**V4 is the current implementation.** It was launched on a Colab A100 on 2026-06-13; the archived log covers configuration, initial evaluation, and early training steps — the full run's final metrics were not preserved, so a complete V4 run (with checkpointing to persistent storage this time) is the next step. V1 is archived (catastrophic forgetting). V2/V3 are kept for lineage.
+**V5 is the current implementation** (2026-08-02, not yet run): it folds in every finding from the 2026-07-30 post-launch code review — per-version narrative in [CHANGELOG.md](./CHANGELOG.md). **V4 is the archived-run artifact**, unchanged since its 2026-06-13 Colab A100 launch; its log covers configuration, initial evaluation, and early training steps, but the full run's final metrics were not preserved. A complete run — now on V5, with checkpointing to persistent storage this time — is the next step. V1 is archived (catastrophic forgetting). V2/V3 are kept for lineage.
 
 ---
 
