@@ -65,6 +65,7 @@ External enforcement via a **constitutional kernel** beats self-critique (CAI) o
 ## Files
 
 - `CAI/README.md` — package overview
+- `CAI/framework.md` — conceptual spine: constraint vs objective, external enforcement, reward-outside-the-reward, attribution
 - `CAI/POSTMORTEM.md` — incident reports: the mention-vs-use eval false positives, and the `residual_violation` metric-semantics split (incl. two open divergences)
 - `CAI/results.md` — post-correction results writeup (2026-04-27)
 - `CAI/status.md` — this doc

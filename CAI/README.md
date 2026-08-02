@@ -45,7 +45,7 @@ One question — *what is a constraint, as opposed to an objective?* — pursued
 
 A single error class stitches the arc together: **crediting one mechanism with work another did.** The v4 scorer counted refusals as violations (mention vs. use); the conflated residual metric would have counted successful blocks as leaks; the pilot's first write-up counted the model's reluctance as the gate's strength. Each instance is documented where it happened ([POSTMORTEM.md](./POSTMORTEM.md), the spec changelog) rather than smoothed over — and the coupled-objective design is the structural response: make the measurement an objective the model pursues on every trial, so the denominator can never quietly collapse to one.
 
-Reading order for the set: this README → [results.md](./results.md) → [POSTMORTEM.md](./POSTMORTEM.md) → [k_disclosure_spec.md](./k_disclosure_spec.md) → [k_pilot_results.md](./k_pilot_results.md) → [coupled_objective_design.md](./coupled_objective_design.md), with [status.md](./status.md) as the running claims ledger and [analysis/v4_transcript_notes.md](./analysis/v4_transcript_notes.md) as a zero-cost coda on what the kernel actually blocks.
+Reading order for the set: this README → [framework.md](./framework.md) (the conceptual spine, five short sections) → [results.md](./results.md) → [POSTMORTEM.md](./POSTMORTEM.md) → [k_disclosure_spec.md](./k_disclosure_spec.md) → [k_pilot_results.md](./k_pilot_results.md) → [coupled_objective_design.md](./coupled_objective_design.md), with [status.md](./status.md) as the running claims ledger and [analysis/v4_transcript_notes.md](./analysis/v4_transcript_notes.md) as a zero-cost coda on what the kernel actually blocks.
 
 ## Package Structure
 
@@ -60,6 +60,7 @@ CAI/
 ├── k_disclosure_spec.md    # Pre-registered K0–K3 disclosure spec (+ run/correction changelog)
 ├── k_pilot_results.md      # K-pilot results (2026-07-30, corrected)
 ├── coupled_objective_design.md  # Coupled-objective screening design (v0.3)
+├── framework.md            # Conceptual spine: constraint vs objective, reward-outside-the-reward
 ├── test_k_disclosure.py    # No-network harness validation (7 regression tests)
 ├── config.py               # Model configs, constants
 ├── clients/
@@ -93,6 +94,8 @@ CAI/
 cd CAI
 python run_experiment.py --models claude-sonnet-4-5-20250929,claude-opus-4-5-20251101
 ```
+
+`run_k_pilot.py` is the K-disclosure pilot's runner (zero-API CLI transport, resumable); the pilot's exact configuration and artifacts are recorded in [k_pilot_results.md](./k_pilot_results.md).
 
 ## Key Design Decisions
 

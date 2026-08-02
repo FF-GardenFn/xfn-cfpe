@@ -1,7 +1,7 @@
 # The Coupled-Objective Screening Design
 
 **Status:** design proposal, v0.3. Not pre-registered; **no live-model data**. The instrument stack is implemented and self-tested (§5.4) — hidden scorer, calibration estimator, end-to-end simulated dry-run — which validates the pipeline, not any claim about models. Every hypothesis here is a candidate for a future pre-registration in the style of [`k_disclosure_spec.md`](./k_disclosure_spec.md).
-**Relationship to the repo:** extends the constitutional-kernel thesis and the K-disclosure axis. Reuses the kernel as an external scorer, the K0–K3 disclosure levels as a treatment, and the Wilson/Fisher analysis harness.
+**Relationship to the repo:** extends the constitutional-kernel thesis and the K-disclosure axis. Reuses the kernel as an external scorer, the K0–K3 disclosure levels as a treatment, and the Wilson/Fisher analysis harness. Conceptual context: [framework.md](./framework.md).
 **Date:** 2026-07-30
 
 ---
