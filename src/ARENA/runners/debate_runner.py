@@ -62,6 +62,13 @@ MODEL_PRESETS: dict[str, ModelConfig] = {
     "gemini-pro": ModelConfig(provider="google", model="gemini-1.5-pro"),
     "gpt4o": ModelConfig(provider="openai", model="gpt-4o"),
     "grok": ModelConfig(provider="xai", model="grok-2-1212"),
+    # Current-generation flagships (Aug 2026). Existing presets are kept so
+    # previously-recorded debate runs stay reproducible.
+    "claude-opus-5": ModelConfig(provider="anthropic", model="claude-opus-5"),
+    "claude-sonnet-5": ModelConfig(provider="anthropic", model="claude-sonnet-5"),
+    "gemini-3.6": ModelConfig(provider="google", model="gemini-3.6-flash"),
+    "gpt-5.6": ModelConfig(provider="openai", model="gpt-5.6-sol"),
+    "grok-4.5": ModelConfig(provider="xai", model="grok-4.5"),
 }
 
 DEFAULT_JUDGE = "claude-opus"
