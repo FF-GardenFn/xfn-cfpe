@@ -46,6 +46,7 @@ This is **prompt engineering meeting training pipelines**:
 | Theory | [O-CoV](../content/techniques/CoV/CoV.md) | Bidirectional verification framework |
 | Prompt Mechanics | [Mechanistic Prompt Layer](../content/techniques/prompt-model/mechanistic-layer/OVERVIEW.md) | Tokenizer-aware anchors, order, references, lenses, and preregistered tests |
 | Training | RL-O-CoV (this) | Bake the structure into weights |
+| Validation | [interp/](./interp/) | Mechanistic test: does training create derivation, or reshape retrieval? (concept erasure) |
 
 The Goldilocks Zone (0.15 < similarity < 0.85 in V2/V3) measures whether hypothesis and oscillation are **related but different**—genuine dialectic tension, not echo chamber or incoherence. V4 sharpens the binary zone into Gaussian targets on mean-centered similarities (H1/H2 distinctness ≈ 0.35, oscillation engagement ≈ 0.50, σ = 0.18), so the reward carries directional gradient instead of a flat in/out signal.
 
@@ -53,7 +54,7 @@ The Goldilocks Zone (0.15 < similarity < 0.85 in V2/V3) measures whether hypothe
 
 The reward decomposition here is a letter/spirit split, arrived at six months before the repo's governance line needed one. `structure_reward` checks that the dialectic's *letter* is present (phase markers, hypothesis/oscillation form); `resonance_reward` checks its *spirit* (genuine tension inside the Goldilocks band — related but different, neither echo nor noise). And the failure mode RL-O-CoV attacks — every token right, the chain broken — is vacuous compliance in the reasoning domain: the letter satisfied, the intent voided.
 
-The constitutional-kernel line formalizes the same split for safety ([../CAI/coupled_objective_design.md](../CAI/coupled_objective_design.md)): a visible objective the model optimizes, a hidden spirit-score computed outside it, and disposition read off route choice at reward parity. The two lines also share a hand-off point. When a model becomes capable enough to infer a hidden evaluation axis, behavioral screening stops working (the design's m★ crossover) — and the concept-erasure protocol in [exp_proposal.md](./exp_proposal.md) is the mechanistic instrument that takes over: probing whether a capability lives in the weights, independent of what the model chooses to show.
+The constitutional-kernel line formalizes the same split for safety ([../CAI/coupled_objective_design.md](../CAI/coupled_objective_design.md)): a visible objective the model optimizes, a hidden spirit-score computed outside it, and disposition read off route choice at reward parity. The two lines also share a hand-off point. When a model becomes capable enough to infer a hidden evaluation axis, behavioral screening stops working (the design's m★ crossover) — and the concept-erasure protocol in [exp_proposal.md](./exp_proposal.md) — now implemented in [interp/](./interp/) — is the mechanistic instrument that takes over: probing whether a capability lives in the weights, independent of what the model chooses to show.
 
 ## The Business Case
 
@@ -67,7 +68,7 @@ Total Cost = (Tokens × Price)
            + (Error Rate × Correction Cost)
 ```
 
-**The economics:** small-tier models (e.g., Haiku at $0.25/$1.25 per 1M tokens) are 12–20x cheaper than frontier tiers, but users escalate to expensive models the moment the cheap tier fails on reasoning. If RL-O-CoV makes a small model reliably execute its reasoning, users stay on the cheap tier: the provider saves inference compute, users get intelligence at lower cost. This holds for any provider's model ladder.
+**The economics:** small-tier models sit well below frontier pricing — on the current ladder (2026-08), Haiku 4.5 at $1/$5 per 1M tokens vs Sonnet 5 at $3/$15, Opus 5 at $5/$25, Fable 5 at $10/$50 (3–10x; earlier-generation ladders spanned 12–20x) — but users escalate to expensive models the moment the cheap tier fails on reasoning. If RL-O-CoV makes a small model reliably execute its reasoning, users stay on the cheap tier: the provider saves inference compute, users get intelligence at lower cost. This holds for any provider's model ladder.
 
 ## Version History
 

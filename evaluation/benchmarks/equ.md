@@ -36,11 +36,16 @@ Hourly rate varies by user type and query complexity—a useful variable for mor
 ## Connection to RL-O-CoV Business Case
 
 
+Current-generation ladder (verified against official pricing, 2026-08):
+
 | Model | Input/1M | Output/1M | Relative Cost |
 |-------|----------|-----------|---------------|
-| Haiku | $0.25 | $1.25 | 1x |
-| Claude-4.5-Sonnet | $3.00 | $15.00 | ~12x |
-| Opus | $5.00 | $25.00 | ~20x |
+| Haiku 4.5 | $1.00 | $5.00 | 1x |
+| Sonnet 5 | $3.00 | $15.00 | 3x |
+| Opus 5 | $5.00 | $25.00 | 5x |
+| Fable 5 | $10.00 | $50.00 | 10x |
+
+Earlier ladders were steeper (Haiku 3-era pricing of $0.25/$1.25 put the frontier 12–20x above the floor). The spread compresses across generations, but the escalation delta stays material — and the full catalog behind this table is `src/get_responses/catalogs/models.py`.
 
 If RL-O-CoV makes a small-tier model reliably reason → users stay on the cheap tier → the provider saves inference compute, users get intelligence at lower cost. The argument holds for any provider's model ladder.
 
@@ -52,7 +57,7 @@ The equations are actionable once five coefficients are calibrated. Current stat
 
 - **Frustration Coefficient** — open; measurable via proxy metrics from multi-turn transcripts (abandon rate, tone shift)
 - **User Time Value** — open; task-dependent ($50/hr for developer debugging vs $200/hr for executive decision)
-- **Model Price Delta** — known from the model catalog (e.g., Haiku→Sonnet = $2.75 input delta)
+- **Model Price Delta** — known from the model catalog (e.g., Haiku 4.5 → Sonnet 5 = $2.00 input delta)
 - **Error Rate** — measurable from `/data/analysis/` results (baseline vs DIALECTICA accuracy)
 - **Correction Cost** — estimable from multi-turn data (turns to resolution × time per turn)
 

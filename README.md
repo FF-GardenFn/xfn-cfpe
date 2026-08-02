@@ -1,6 +1,6 @@
 # XFN-CFPE
 
-XFN-CFPE is a research and evaluation workspace for testing how language-model behavior changes under different prompts, evaluation frames, training loops, and control mechanisms. The repo combines completed experiments, reusable execution infrastructure, prompt/theory artifacts, and forward research projects around model behavior, constitutional control, and cross-provider evaluation. Everything runs against a provider-agnostic execution layer (Anthropic, OpenAI, Google, xAI — 22 models in one catalog), so claims are about *model behavior*, not one vendor's playground.
+XFN-CFPE is a research and evaluation workspace for testing how language-model behavior changes under different prompts, evaluation frames, training loops, and control mechanisms. The repo combines completed experiments, reusable execution infrastructure, prompt/theory artifacts, and forward research projects around model behavior, constitutional control, and cross-provider evaluation. Everything runs against a provider-agnostic execution layer (Anthropic, OpenAI, Google, xAI — 43 models in one catalog), so claims are about *model behavior*, not one vendor's playground.
 
 The core loop is simple: state a hypothesis about what should govern model behavior, implement the prompt or intervention, run it across models/providers, measure the result, and keep the artifacts inspectable enough to distinguish surface compliance from the mechanism that produced it.
 
@@ -54,7 +54,7 @@ Four levers produce behavior: what the model was trained on, what its context sa
 | Cross-provider execution | [src/get_responses/](./src/get_responses/) | Provider adapters, model catalogs, CLI, and response processing |
 | Multi-turn evaluation | [src/ARENA/](./src/ARENA/) | Debate/escalation runners with a full scoring pipeline (rubric → cost → composite reward) |
 | Training diagnostics | [training_insights/](./training_insights/) | Composite reward, checkpoint evaluation, and experiment reporting |
-| Reasoning-execution RL | [RL-O-CoV/](./RL-O-CoV/) | Resonance-shaped RL: train the execution of reasoning, not the answers |
+| Reasoning-execution RL | [RL-O-CoV/](./RL-O-CoV/) | Resonance-shaped RL: train the execution of reasoning, not the answers; concept-erasure validation instrument in [interp/](./RL-O-CoV/interp/) |
 
 ## Directory Structure
 
@@ -64,6 +64,7 @@ Four levers produce behavior: what the model was trained on, what its context sa
   - [refusal-capability-entanglement/](./project/refusal-capability-entanglement/) - Activation-steering pilot: refusal-direction separability vs. capability
 - **CAI/** - Constitutional kernel experiment
   - [README.md](./CAI/README.md) - Hypothesis, design principle, results at a glance, and the research arc
+  - [framework.md](./CAI/framework.md) - Conceptual spine: constraint vs objective, reward outside the reward, attribution
   - [results.md](./CAI/results.md), [status.md](./CAI/status.md), [POSTMORTEM.md](./CAI/POSTMORTEM.md) - Results, claims ledger, incident reports
   - [k_disclosure_spec.md](./CAI/k_disclosure_spec.md), [k_pilot_results.md](./CAI/k_pilot_results.md), [coupled_objective_design.md](./CAI/coupled_objective_design.md) - Disclosure axis (pre-registered + piloted) and the coupled-objective screening design
   - [analysis/](./CAI/analysis/), [classifier/](./CAI/classifier/), [experiment/](./CAI/experiment/), [kernel/](./CAI/kernel/), [results/](./CAI/results/) - Experiment components and tracked data
@@ -96,5 +97,5 @@ Four levers produce behavior: what the model was trained on, what its context sa
   - [prompt-model/](./plugins/prompt-model/) - Prompt-model plugin materials
   - [training-insights/](./plugins/training-insights/) - Training-insights plugin materials
 - **agents/** - Pipeline-automation agent designs and their implementation status ([agents/README.md](./agents/README.md))
-- **RL-O-CoV/** - Reinforcement-learning experiments
+- **RL-O-CoV/** - Reinforcement-learning experiments ([CHANGELOG](./RL-O-CoV/CHANGELOG.md), V1→V5); mechanistic validation in [interp/](./RL-O-CoV/interp/)
 - [system-design.md](./system-design.md) - Original closed-loop pipeline design note (generate → execute → evaluate → iterate)

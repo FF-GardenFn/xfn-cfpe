@@ -8,13 +8,13 @@ This infrastructure enables systematic prompt engineering through a closed-loop 
 
 The execution layer. It sends prompts to LLMs and captures structured responses including chain-of-thought when available.
 
-The core abstraction is a `Processor` that takes a prompt and system prompt, routes them through a configured provider, and returns a `CompletionResponse` containing the answer, thinking content, token usage, and latency. The provider layer supports four backends: Anthropic (Claude), OpenAI (GPT/o-series), Google (Gemini), and xAI (Grok). All share the same interface—swap providers with a single config change. A centralized model catalog tracks 22 models with pricing, token limits, and capability flags. Configuration lives in environment variables via pydantic-settings.
+The core abstraction is a `Processor` that takes a prompt and system prompt, routes them through a configured provider, and returns a `CompletionResponse` containing the answer, thinking content, token usage, and latency. The provider layer supports four backends: Anthropic (Claude), OpenAI (GPT/o-series), Google (Gemini), and xAI (Grok). All share the same interface—swap providers with a single config change. A centralized model catalog tracks 43 models with pricing, token limits, and capability flags. Configuration lives in environment variables via pydantic-settings.
 
 For comparative work, the processor supports paired execution: run the same query against a baseline prompt and a treatment prompt, then export both responses for downstream evaluation. Batch processing handles multiple queries with multiple prompts, producing a matrix of responses. All outputs serialize to JSON or JSONL for pipeline integration.
 
 The prompt loader reads system prompts from markdown files and test queries from structured documents. This separation means prompts live in version control as readable artifacts, not embedded in code.
 
-**Current state**: Four providers implemented (Anthropic, OpenAI, Google, xAI) with unified interface. Extended thinking support for Claude and Gemini. Reasoning mode support for o1/o3 series. Centralized model catalog with 22 models, pricing, and capabilities. CLI operational for single runs, comparisons, and batch execution. Prompt loading and response export functional.
+**Current state**: Four providers implemented (Anthropic, OpenAI, Google, xAI) with unified interface. Extended thinking support for Claude and Gemini. Reasoning mode support for o1/o3 series. Centralized model catalog with 43 models, pricing, and capabilities. CLI operational for single runs, comparisons, and batch execution. Prompt loading and response export functional.
 
 **Next**: Implement async execution for parallelism. Add retry logic with exponential backoff. Build cross-provider comparison tooling.
 
@@ -74,7 +74,7 @@ get_responses/
 │   ├── google.py     # Gemini (thinking support)
 │   └── xai.py        # Grok
 ├── catalogs/         # centralized model registry
-│   ├── models.py     # 22 models with pricing/capabilities
+│   ├── models.py     # 43 models with pricing/capabilities
 │   └── schemas.py    # ModelConfig, ExperimentConfig
 ├── prompts/          # prompt and query loading
 ├── storage/          # response export
