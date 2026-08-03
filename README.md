@@ -49,6 +49,7 @@ Four levers produce behavior: what the model was trained on, what its context sa
 | Control provenance | [project/control-provenance-eval/](./project/control-provenance-eval/) | Evaluation frame for identifying which layer supplied behavioral control |
 | Intent laundering | [project/intent_laundering/](./project/intent_laundering/) | Methodology and seed-example analysis for request-layer intent-laundering detection |
 | Refusal/capability geometry | [project/refusal-capability-entanglement/](./project/refusal-capability-entanglement/) | Activation-steering pilot on Llama-3.1-8B testing whether refusal direction is geometrically separable from capability |
+| AI-work economics | [project/memory-spectrum-index/](./project/memory-spectrum-index/) | Memory-Spectrum Index: prices the memory modes of (task, executor) pairs instead of mean automatability; pre-registered recurring falsification against published agent-project postmortems |
 | Prompt reasoning | [content/prompts/dialectica/](./content/prompts/dialectica/) | DIALECTICA versions, including current `v0.3.7` |
 | Anti-hallucination prompting | [content/prompts/XDRG/](./content/prompts/XDRG/) | DIALECTICA-RIGOR variant |
 | Cross-provider execution | [src/get_responses/](./src/get_responses/) | Provider adapters, model catalogs, CLI, and response processing |
@@ -62,6 +63,7 @@ Four levers produce behavior: what the model was trained on, what its context sa
   - [control-provenance-eval/](./project/control-provenance-eval/) - Control-provenance benchmark and methodology
   - [intent_laundering/](./project/intent_laundering/) - Intent-laundering examples, prompt, and pilot results
   - [refusal-capability-entanglement/](./project/refusal-capability-entanglement/) - Activation-steering pilot: refusal-direction separability vs. capability
+  - [memory-spectrum-index/](./project/memory-spectrum-index/) - MSX: memory-spectrum pricing of AI-assisted work + the P-LEDGER falsification registry
 - **CAI/** - Constitutional kernel experiment
   - [README.md](./CAI/README.md) - Hypothesis, design principle, results at a glance, and the research arc
   - [framework.md](./CAI/framework.md) - Conceptual spine: constraint vs objective, reward outside the reward, attribution
