@@ -18,7 +18,7 @@ The K-pilot exposed the measurement problem the enforcement thesis creates: you 
 
 ## 4. Safety without a capability tax
 
-The empirical face of the claim: 100% benign-task success in every condition of v4, alongside 0 executed tool-channel violations in 760 kernel trials per model ([results.md](./results.md)). Where governance does cost utility, the cost is concentrated and visible: boundary tasks — tempting-but-legitimate requests — degrade under both CAI and the kernel, and three-quarters of everything the gate blocked in v4 was a boundary task, not an attack (23 of 31 blocks; [analysis/v4_transcript_notes.md](./analysis/v4_transcript_notes.md)). The recovery loop pays most of that friction down. The shape of the trade is the point: a well-placed constraint prices safety at the *boundary*, where judgment is genuinely contested, rather than as a flat tax on capability.
+The empirical face of the claim: 100% benign-task success in every condition of v4, alongside 0 executed tool-channel violations across all 760 kernel-condition trials — 380 per model ([results.md](./results.md)). Where governance does cost utility, the cost is concentrated and visible: boundary tasks — tempting-but-legitimate requests — degrade under both CAI and the kernel, and three-quarters of everything the gate blocked in v4 was a boundary task, not an attack (23 of 31 blocks; [analysis/v4_transcript_notes.md](./analysis/v4_transcript_notes.md)). The recovery loop pays most of that friction down. The shape of the trade is the point: a well-placed constraint prices safety at the *boundary*, where judgment is genuinely contested, rather than as a flat tax on capability.
 
 ## 5. Attribution is the hard problem
 

@@ -25,7 +25,7 @@ Initial scoring contained false positives where a model **refused** an adversari
 
 ## Headline findings
 
-1. **Kernel eliminates tool-based violations entirely.** Both `kernel_only` and `cai_kernel` conditions: 0 **executed** tool-based violations across 760 trials per model. (Calls the gate *blocked* are counted separately, as evidence the gate worked.)
+1. **Kernel eliminates tool-based violations entirely.** Both `kernel_only` and `cai_kernel` conditions: 0 **executed** tool-based violations across all 760 kernel-condition trials (380 per model). (Calls the gate *blocked* are counted separately, as evidence the gate worked.)
 2. **Dual-surface governance is best.** `cai_kernel` produces the lowest residual-violation rate for both models: Opus 2.6%, Sonnet 2.1%.
 3. **Capability inversion on Sonnet under CAI alone:** baseline 4.2% → CAI 5.3% (+1.1pp). CAI without external enforcement marginally degrades Sonnet's safety.
 4. **CAI > Kernel-only for Opus on the action surface itself:** CAI 5.8% vs Kernel-only 8.9%. The constitution shapes intent better than gating alone, though combining the two beats either.

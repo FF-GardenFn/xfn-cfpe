@@ -25,7 +25,7 @@ The complementary training-time result: fine-tuning on norm-wrapped demonstratio
 | Opus 4.5   | 13.7%  | 5.8%  | 8.9%  | **2.6%**  |
 | Sonnet 4.5 |  4.2%  | 5.3%  | 3.2%  | **2.1%**  |
 
-- **0 / 760 tool-based violations *executed* under any kernel condition, per model** — the action channel seals completely, at zero benign-task cost (100% benign success everywhere). Calls the gate blocked are counted separately, as evidence it worked, never as harm.
+- **0 executed tool-channel violations across all 760 kernel-condition trials (380 per model)** — the action channel seals completely, at zero benign-task cost (100% benign success everywhere). Calls the gate blocked are counted separately, as evidence it worked, never as harm.
 - **All harm that executed under kernel is text-only** — the predicted blind spot, confirmed; the text channel needs its own mechanism.
 - The table above is the `residual` rate, which means `executed OR recovery_failure` — an **upper bound** on what got through, not a measure of it.
 - **Dual-surface governance wins** on both models; on Opus the reduction is 81% relative.
@@ -39,7 +39,7 @@ The kernel and harness are model-agnostic (any tool-calling model); v4 ran on An
 
 One question — *what is a constraint, as opposed to an objective?* — pursued through three instruments, each built to repair the honest weakness of the last:
 
-1. **v4, the anchor** ([results.md](./results.md)): a 2×2 factorial over 1,520 trials establishing that an external gate seals the action channel (0 executed tool-channel violations in 760 kernel trials per model) while self-critique alone cannot — and that everything which still executes is prose, the surface the gate cannot see.
+1. **v4, the anchor** ([results.md](./results.md)): a 2×2 factorial over 1,520 trials establishing that an external gate seals the action channel (0 executed tool-channel violations across 760 kernel trials; 380 per model) while self-critique alone cannot — and that everything which still executes is prose, the surface the gate cannot see.
 2. **The K-disclosure axis** ([k_disclosure_spec.md](./k_disclosure_spec.md)): does the seal survive the model *knowing about it*? Safety that persists under full disclosure is the operational definition of a constraint; safety that degrades is an objective wearing a constraint's costume. The pilot ([k_pilot_results.md](./k_pilot_results.md)) returned the least glamorous, most instructive result available: a refusing model exercised the gate once in 192 trials, so the zero proves little — and the write-up says so against the correct denominator instead of claiming the anchor's strength.
 3. **The coupled-objective screening design** ([coupled_objective_design.md](./coupled_objective_design.md)) inverts the problem rather than scaling it. Instead of waiting for a refusing model to attack, it couples a hidden spirit-score $H$ to a visible objective the model is happy to optimize, and reads the *disposition to game* off route choice at reward-parity — an intercept/slope decomposition separating willingness from competence, with disclosure (K0–K3) reused as the treatment. The instrument stack (hidden scorer, calibration estimator, simulated end-to-end dry-run, an ARENA composite-reward host) is built and self-tested; no live-model data yet.
 
